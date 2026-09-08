@@ -1,0 +1,22 @@
+rule_code,rule_name,primary_activity,conflicting_activity,severity,min_safety_buffer_minutes
+RULE-01,Track Repair vs Train Movement,TRACK_REPAIR,TRAIN_MOVEMENT,CRITICAL,30
+RULE-02,OHE Power Isolation vs Electric Locomotives,OHE_POWER_OFF,ELECTRIC_TRAIN_MOVEMENT,CRITICAL,20
+RULE-03,Dust Grinding vs Signal Relays,BALLAST_GRINDING,SIGNAL_RELAY_INSPECTION,HIGH,15
+RULE-04,Signal Cable Digging vs Active Signaling,CABLE_DIGGING,ACTIVE_SIGNAL_OPERATION,HIGH,20
+RULE-05,OHE Crane Work vs High Speed Passenger,CRANE_OHE_LIFT,HIGH_SPEED_PASSENGER,CRITICAL,30
+RULE-06,Ultrasonic Inspection vs High Speed Movement,ULTRASONIC_TESTING,TRAIN_MOVEMENT,MEDIUM,15
+RULE-07,Safety Rule 7: Inter-department activity separation,ACTIVITY_7_A,ACTIVITY_7_B,HIGH,20
+RULE-08,Safety Rule 8: Inter-department activity separation,ACTIVITY_8_A,ACTIVITY_8_B,LOW,15
+RULE-09,Safety Rule 9: Inter-department activity separation,ACTIVITY_9_A,ACTIVITY_9_B,LOW,20
+RULE-10,Safety Rule 10: Inter-department activity separation,ACTIVITY_10_A,ACTIVITY_10_B,MEDIUM,20
+RULE-11,Safety Rule 11: Inter-department activity separation,ACTIVITY_11_A,ACTIVITY_11_B,HIGH,15
+RULE-12,Safety Rule 12: Inter-department activity separation,ACTIVITY_12_A,ACTIVITY_12_B,LOW,10
+RULE-13,Safety Rule 13: Inter-department activity separation,ACTIVITY_13_A,ACTIVITY_13_B,HIGH,10
+RULE-14,Safety Rule 14: Inter-department activity separation,ACTIVITY_14_A,ACTIVITY_14_B,MEDIUM,15
+RULE-15,Safety Rule 15: Inter-department activity separation,ACTIVITY_15_A,ACTIVITY_15_B,LOW,10
+RULE-16,Safety Rule 16: Inter-department activity separation,ACTIVITY_16_A,ACTIVITY_16_B,HIGH,15
+RULE-17,Safety Rule 17: Inter-department activity separation,ACTIVITY_17_A,ACTIVITY_17_B,LOW,10
+RULE-18,Safety Rule 18: Inter-department activity separation,ACTIVITY_18_A,ACTIVITY_18_B,LOW,20
+RULE-19,Safety Rule 19: Inter-department activity separation,ACTIVITY_19_A,ACTIVITY_19_B,MEDIUM,20
+RULE-20,Safety Rule 20: Inter-department activity separation,ACTIVITY_20_A,ACTIVITY_20_B,MEDIUM,15
+RULE-21,Safety Rule 21: Inter-department activity separation,ACTIVITY_21_A,ACTIVITY_21_B,HIGH,10
