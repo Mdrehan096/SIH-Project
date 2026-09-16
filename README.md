@@ -15,60 +15,62 @@ By bundling geographically proximate maintenance tasks across departments within
 
 ---
 
-## 🤖 RETRACKAI — Project-Specific AI Knowledge Assistant
+## 🤖 RETRACKAI — Project-Specific LLM & RAG Assistant
 
-RETRACK incorporates **RETRACKAI**, a dedicated ChatGPT-style project knowledge assistant engineered specifically for RETRACK – RailSync-AI.
+RETRACK incorporates **RETRACKAI**, a dedicated ChatGPT-style project knowledge assistant engineered specifically for RETRACK – RailSync-AI (SIH 2026 Problem Statement 26027).
 
 ```
-                         USER
-                           │
-                           ▼
-                    ┌─────────────┐
-                    │  RETRACKAI  │
-                    │ Chat UI     │
-                    └──────┬──────┘
-                           │
-                           ▼
-                 ┌──────────────────┐
-                 │ AI Orchestrator  │
-                 │ (service.py)     │
-                 └────────┬─────────┘
-                          │
-          ┌───────────────┼────────────────┐
-          │               │                │
-          ▼               ▼                ▼
-   Project Knowledge   Live Data       Chat History
-   (retriever.py)      Tools           Retrieval
-   (20 Markdown Docs)  (tools.py)      (queries.py)
-          │               │                │
-          │        ┌──────┼───────┐        │
-          │        │      │       │        │
-          │       TMS    TDMS    SMMS      │
-          │                       │        │
-          │                      COA       │
-          │                       │        │
-          └───────────────┬───────┘        │
-                          │                │
-                          ▼                │
-                    Context Builder ◄──────┘
-                          │
-                          ▼
-                    Prompt Builder & Guardrails
-                          │
-                          ▼
-                     LLM Provider
-                          │
-                          ▼
-                     RETRACKAI Response
+                         USER QUERY
+                              │
+                              ▼
+                       RETRACKAI UI
+                              │
+                              ▼
+            Chat API (/api/v1/chat/query & /stream)
+                              │
+                              ▼
+                   Conversation Memory Service
+                              │
+                              ▼
+                     Query Rewriter Engine
+  (e.g., "Why is it needed?" ➔ "Why is predictive risk scoring needed in RETRACK?")
+                              │
+                              ▼
+                     Intent Classifier
+  (CLASSIFIES INTO: WORKFLOW, OPTIMIZATION, VIVA, MODULE_EXPLANATION, etc.)
+                              │
+                              ▼
+                     RETRACK Domain RAG
+         ┌────────────────────┴────────────────────┐
+         ▼                                         ▼
+   Vector Retriever                         Live Data Feeds
+  (24 Knowledge Files)                   (TMS, TDMS, SMMS, COA)
+         │                                         │
+         └────────────────────┬────────────────────┘
+                              ▼
+                    LLM Provider Service
+            (Configurable via .env settings)
+                              │
+                              ▼
+                  Structured Response Generator
+                              │
+                              ▼
+                  Expandable Source Metadata
+                              │
+                              ▼
+                SSE Streaming Token Output / UI
 ```
 
-### Key RETRACKAI Capabilities
-1. **RAG Knowledge Base (20 Modular Markdown Knowledge Files):** Grounded in structured project documentation covering Problem Statement 26027, MVC Architecture, System Workflow, TMS/TDMS/SMMS/COA feeds, CP-SAT MILP solver math, Scikit-Learn Random Forest risk weights, Digital PN 2-factor handshake, database schema, REST APIs, future scope, and limitations.
-2. **Safe Application Data Tools (`tools.py`):** Fetches live operational data from TMS, TDMS, SMMS, COA, risk model, and CP-SAT solver without executing arbitrary SQL.
-3. **🎓 Viva & Presentation Mode:** Generates short, presentation-ready Q&A answers for hackathon judges and viva mentors.
-4. **Explainer Mode Buttons:** Instant 1-click explanation prompts for `Explain Project`, `Architecture`, `Workflow`, `AI/ML`, `CP-SAT`, `Database`, `APIs`, `Security`, `Future Scope`, and `Viva Questions`.
-5. **Chat History & Search:** Persists chat sessions and message streams in Supabase PostgreSQL (`retrackai_conversations`, `retrackai_messages`, `retrackai_feedback`) with sidebar search.
-6. **Strict Hallucination Control:** Refuses non-project queries and clearly distinguishes prototype/demo data from production data.
+### Key RETRACKAI Features & Modules
+1. **Domain-Specific RAG Knowledge Base (24 Markdown Documents):** Grounded in structured project documentation covering Problem Statement 26027, End-to-End Workflow, TMS/TDMS/SMMS/COA feeds, Data Ingestion, Spatial & Temporal Bundling, CP-SAT MILP solver math, Scikit-Learn Random Forest risk weights, Digital PN 2-factor handshake, Database Schema, REST APIs, Security, Viva Guide, Terminology, Future Scope, and Limitations.
+2. **Contextual Query Rewriter (`query_rewriter.py`):** Converts conversational follow-up questions ("Why is it needed?") into standalone, context-complete queries ("Why is predictive risk scoring needed in RETRACK?") using sliding memory history.
+3. **15-Class Intent Classifier (`intent_classifier.py`):** Automatically detects user query intent (`PROJECT_OVERVIEW`, `WORKFLOW`, `AI_ML`, `OPTIMIZATION`, `SAFETY`, `DATABASE`, `API`, `VIVA`, `FUTURE_SCOPE`, `LIMITATIONS`, etc.).
+4. **Environment-Configurable LLM Provider (`llm_provider.py`):** Modular abstraction supporting Google Gemini, Groq, OpenAI, and local LLMs via `.env` configuration.
+5. **Streaming SSE Endpoint (`POST /api/v1/chat/stream`):** Server-Sent Events endpoint enabling real-time ChatGPT-like token streaming responses.
+6. **Chat History & Session Management:** Persists conversations and messages in Supabase PostgreSQL (`retrackai_conversations`, `retrackai_messages`, `retrackai_feedback`) with sidebar history search, conversation renaming, and chat deletion.
+7. **🎓 Viva & Presentation Mode:** Specialized Q&A defense mentor mode generating exam-ready answers and key technical points for hackathon judges and viva mentors.
+8. **Safe Application Data Tools (`tools.py`):** Direct read-only integration with TMS, TDMS, SMMS, COA, Risk Engine, and CP-SAT solver feeds.
+9. **Strict Hallucination Control:** Focuses strictly on RETRACK project knowledge and railway operational parameters, preventing fabricated data.
 
 ---
 
@@ -82,30 +84,31 @@ RETRACK – RailSync-AI enforces a clean, modular **Model-View-Controller (MVC)*
                       +---------------------------------+
                                        |
                                        v
-               +-----------------------------------------------+
-               |                 VIEW LAYER                    |
-               |  - React Pages (BlockPlanner, DigitalPn)   |
-               |  - FastAPI API Routes (REST Controllers)      |
-               +-----------------------------------------------+
-                                 |            ^
-                    HTTP Request |            | JSON Response
-                                 v            |
-               +-----------------------------------------------+
-               |              CONTROLLER LAYER                 |
-               |  - MaintenanceController (CRUD & State)       |
-               |  - OptimizerController (CP-SAT Solver)        |
-               |  - RiskController (Scikit-Learn ML Engine)    |
-               |  - PNController (2-Factor Handshake)          |
-               +-----------------------------------------------+
-                                 |            ^
-                   Business Data |            | Domain Model Data
-                                 v            |
-               +-----------------------------------------------+
-               |                 MODEL LAYER                   |
-               |  - Domain Entities (app/models/domain.py)     |
-               |  - Pydantic DTO Schemas (app/schemas/)         |
-               |  - Supabase PostgreSQL Database (schema.sql)  |
-               +-----------------------------------------------+
+                +-----------------------------------------------+
+                |                 VIEW LAYER                    |
+                |  - React Pages (BlockPlanner, DigitalPn)   |
+                |  - FastAPI API Routes (REST Controllers)      |
+                +-----------------------------------------------+
+                                  |            ^
+                     HTTP Request |            | JSON Response
+                                  v            |
+                +-----------------------------------------------+
+                |              CONTROLLER LAYER                 |
+                |  - MaintenanceController (CRUD & State)       |
+                |  - OptimizerController (CP-SAT Solver)        |
+                |  - RiskController (Scikit-Learn ML Engine)    |
+                |  - PNController (2-Factor Handshake)          |
+                |  - ChatController (RETRACKAI LLM Orchestrator)|
+                +-----------------------------------------------+
+                                  |            ^
+                    Business Data |            | Domain Model Data
+                                  v            |
+                +-----------------------------------------------+
+                |                 MODEL LAYER                   |
+                |  - Domain Entities (app/models/domain.py)     |
+                |  - Pydantic DTO Schemas (app/schemas/)         |
+                |  - Supabase PostgreSQL Database (schema.sql)  |
+                +-----------------------------------------------+
 ```
 
 ---
@@ -124,13 +127,13 @@ RETRACK – RailSync-AI enforces a clean, modular **Model-View-Controller (MVC)*
 ### Backend Architecture
 - **Architecture Pattern:** MVC (Model-View-Controller) Architecture
 - **Language & Runtime:** Python 3.11+ / 3.14
-- **API Framework:** FastAPI 0.110+ (Asynchronous ASGI Engine with OpenAPI Docs)
+- **API Framework:** FastAPI 0.110+ (Asynchronous ASGI Engine with OpenAPI Docs & SSE Streaming)
 - **Data Validation:** Pydantic v2.6 & `pydantic-settings`
 - **Security:** PyJWT (HS256 Token Auth), Passlib Bcrypt, Role-Based Access Control (RBAC)
 - **Web Server:** Uvicorn (Production ASGI Server)
 
 ### AI, Machine Learning & Mathematical Optimization
-- **Knowledge Assistant:** RETRACKAI RAG Engine & Data Retrieval Tools
+- **LLM Assistant:** RETRACKAI RAG Engine (Query Rewriter, Intent Classifier, LLM Provider, Memory Service)
 - **Optimization Solver:** Google OR-Tools v9.9 (CP-SAT Constraint Programming Solver)
 - **Predictive Risk Model:** Scikit-Learn v1.4 (Random Forest Classifier & Feature Importance Evaluator)
 - **Data Processing:** Pandas v2.2, NumPy v1.26, Joblib v1.3
@@ -195,7 +198,13 @@ SIH_PROJECT/
 │   └── seed.sql                # Northern Railway NDLS-AGC corridor operational demo data
 ├── backend/
 │   ├── app/
-│   │   ├── ai/retrackai/       # RETRACKAI Assistant (Service, Knowledge, Retriever, Tools, Prompts)
+│   │   ├── ai/retrackai/       # RETRACKAI LLM & RAG Engine (Service, Knowledge, Retriever, Tools, Prompts)
+│   │   │   ├── knowledge/      # 24 Domain Knowledge Markdown Documents
+│   │   │   ├── embedding_service.py # Vector Store & Embedding Abstraction
+│   │   │   ├── intent_classifier.py # 15-Class Query Intent Engine
+│   │   │   ├── llm_provider.py # Configurable Multi-LLM Provider Interface
+│   │   │   ├── memory_service.py    # Sliding Context Window Memory
+│   │   │   └── query_rewriter.py    # Follow-up Context Rewriter
 │   │   ├── api/routes/         # VIEW LAYER: FastAPI endpoints (Chat, Maintenance, Trains, Optimizer, PN)
 │   │   ├── controllers/        # CONTROLLER LAYER: Request Orchestrators
 │   │   ├── core/               # Configuration settings, CORS, JWT security
@@ -215,7 +224,7 @@ SIH_PROJECT/
 │   │   └── App.tsx             # Main App Router & Layout
 │   ├── package.json            # Frontend NPM dependencies
 │   └── .env                    # Frontend environment variables
-└── tests/                      # Pytest unit & integration test suite (32 tests)
+└── tests/                      # Pytest unit & integration test suite (33 tests)
 ```
 
 ---
@@ -253,6 +262,7 @@ python -m uvicorn app.main:app --reload --port 8000
 - **API Base URL:** `http://localhost:8000`
 - **Interactive OpenAPI Docs:** `http://localhost:8000/docs`
 - **RETRACKAI Endpoint:** `http://localhost:8000/api/v1/chat/query`
+- **RETRACKAI Streaming Endpoint:** `http://localhost:8000/api/v1/chat/stream`
 
 ### 4. Frontend Setup & Execution
 
@@ -289,6 +299,6 @@ Run the automated Pytest suite from the project root:
 ```powershell
 d:\SIH_PROJECT\backend\venv\Scripts\pytest.exe d:\SIH_PROJECT\tests
 ```
-- **Test Result:** `32 passed` (100% pass rate).
+- **Pytest Suite:** `33 passed` (100% pass rate).
 - **TypeScript Verification:** `npx tsc --noEmit` passed with **0 errors**.
-- **Production Build:** `npm run build` compiled in **8.49s**.
+- **Production Build:** `npm run build` compiled cleanly in **8.20s**.
