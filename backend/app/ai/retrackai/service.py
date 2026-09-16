@@ -22,7 +22,6 @@ from app.ai.retrackai.tools import (
 )
 from app.ai.retrackai.prompts import (
     RETRACKAI_SYSTEM_IDENTITY,
-    VIVA_MODE_PROMPT_PREFIX,
     SUMMARY_MODES_PROMPTS,
     EXPLAINER_MODES_PROMPTS,
 )
@@ -36,7 +35,7 @@ from app.db.queries import save_retrackai_message
 
 
 class RETRACKAIService:
-    """Service orchestrating RETRACKAI intelligence, tool calling, and RAG."""
+    """Service orchestrating RETRACKAI intelligence, project search, tool calling, and RAG."""
 
     def process_query(self, req: RETRACKAIQueryRequest, current_user: dict) -> RETRACKAIQueryResponse:
         user_msg = req.message.strip()
@@ -58,13 +57,13 @@ class RETRACKAIService:
             rag_docs = retriever.search(prompt_instruction, top_k=3)
             response_text = self._build_knowledge_response(prompt_instruction, rag_docs, sources)
 
-        # 2. Check for Live Data Queries (Tool Calling)
-        elif any(k in msg_lower for k in ["tdms", "defect", "cracks", "ultrasonic", "flaw"]):
+        # 2. Check for Specific Search / Live Data Queries (Tool & Data Search)
+        elif any(k in msg_lower for k in ["tdms", "defect", "cracks", "ultrasonic", "flaw", "trk-"]):
             data_type = "ASSET_RISKS"
             data_obj = get_tdms_feed()
             sources.append(KnowledgeSourceMetadata(source="Live Application Data", document="TDMS Defect Feed", section="Critical Defects"))
             response_text = (
-                f"### ⚠️ Live TDMS Track Defect Summary\n\n"
+                f"### ⚠️ Live TDMS Track Defect Search Results\n\n"
                 f"Retrieved **{data_obj.get('critical_defects_count', 0)} critical defect records** from the Track Defect Management System (TDMS) feed.\n\n"
                 f"- **Primary Threat:** Rail cracks and ultrasonic flaw alerts at KM 124.5 (`TRK-124`).\n"
                 f"- **Recommended Action:** Schedule joint maintenance block possession during 02:00-03:00 AM window.\n\n"
@@ -75,12 +74,12 @@ class RETRACKAIService:
                 ChatActionDTO(label="High-Risk Assets", target_path="/assets", action_code="SHOW_RISK"),
             ]
 
-        elif any(k in msg_lower for k in ["tms", "civil", "track repair", "tamping"]):
+        elif any(k in msg_lower for k in ["tms", "civil", "track repair", "tamping", "ballast"]):
             data_type = "MAINTENANCE_FEED"
             data_obj = get_tms_feed()
             sources.append(KnowledgeSourceMetadata(source="Live Application Data", document="TMS Civil Feed", section="Maintenance Jobs"))
             response_text = (
-                f"### 🔨 Live TMS Civil Engineering Summary\n\n"
+                f"### 🔨 Live TMS Civil Engineering Search Results\n\n"
                 f"Retrieved **{data_obj.get('total_count', 0)} civil track repair requests** from the Track Management System (TMS) feed.\n\n"
                 f"- **Top Priority Job:** Track Rail Replacement & Deep Ballast Tamping (KM 124.5).\n"
                 f"- **Required Block Type:** `TRAFFIC_BLOCK` / `JOINT_POSSESSION` (60 min duration).\n\n"
@@ -95,19 +94,19 @@ class RETRACKAIService:
             data_obj = get_smms_feed()
             sources.append(KnowledgeSourceMetadata(source="Live Application Data", document="SMMS Electrical & S&T Feed", section="Power & Signal Jobs"))
             response_text = (
-                f"### ⚡ Live SMMS Electrical OHE & Signal/Telecom Summary\n\n"
+                f"### ⚡ Live SMMS Electrical OHE & Signal/Telecom Search Results\n\n"
                 f"Retrieved **{data_obj.get('total_count', 0)} electrical and signal requests** from the SMMS feed.\n\n"
                 f"- **OHE Catenary Wire Tensioning (`OHE-124`):** Location KM 124.2 requiring `POWER_BLOCK`.\n"
                 f"- **Signal Relay Test (`SIG-125`):** Location KM 125.0 requiring signal red interlock.\n\n"
                 f"*Data Source: Live SMMS Feed*"
             )
 
-        elif any(k in msg_lower for k in ["coa", "train", "vande bharat", "rajdhani", "delayed"]):
+        elif any(k in msg_lower for k in ["coa", "train", "vande bharat", "rajdhani", "delayed", "express"]):
             data_type = "TRAINS_LIST"
             data_obj = get_coa_trains()
             sources.append(KnowledgeSourceMetadata(source="Live Application Data", document="COA Train Operations Feed", section="Timetables & Delays"))
             response_text = (
-                f"### 🚆 Live COA Train Operations Summary\n\n"
+                f"### 🚆 Live COA Train Operations Search Results\n\n"
                 f"Currently monitoring **{data_obj.get('total_trains_running', 0)} active trains** on the NDLS-AGC Corridor.\n\n"
                 f"- **On-Time Running:** {data_obj.get('on_time_count', 0)} trains\n"
                 f"- **Delayed Trains:** {data_obj.get('delayed_count', 0)} train(s)\n"
@@ -118,12 +117,12 @@ class RETRACKAIService:
                 ChatActionDTO(label="CP-SAT Planner", target_path="/planner", action_code="SHOW_BLOCKS"),
             ]
 
-        elif any(k in msg_lower for k in ["cp-sat", "optimizer", "block plan", "possession", "bundling"]):
+        elif any(k in msg_lower for k in ["cp-sat", "optimizer", "block plan", "possession", "bundling", "solver", "schedule"]):
             data_type = "BLOCK_PLAN"
             data_obj = get_optimizer_results()
             sources.append(KnowledgeSourceMetadata(source="RETRACK Project Documentation", document="optimization.md", section="CP-SAT MILP Solver"))
             response_text = (
-                f"### 🧩 Google OR-Tools CP-SAT Possession Block Output\n\n"
+                f"### 🧩 Google OR-Tools CP-SAT Possession Block Search Results\n\n"
                 f"**Recommended Block:** `BLK-2026-081`\n"
                 f"- **Section:** NDLS - AGC Section (KM 120.0 to 128.5)\n"
                 f"- **Optimized Window:** `02:00 AM – 03:00 AM` (60 Mins Duration)\n"
@@ -138,7 +137,7 @@ class RETRACKAIService:
             data_obj = get_digital_pn_status()
             sources.append(KnowledgeSourceMetadata(source="RETRACK Project Documentation", document="digital_pn.md", section="2-Factor Handshake Protocol"))
             response_text = (
-                f"### 🔑 Digital Private Number (PN) Exchange Status\n\n"
+                f"### 🔑 Digital Private Number (PN) Search Results\n\n"
                 f"- **Block ID:** `{data_obj.get('block_id', 'BLK-2026-081')}`\n"
                 f"- **Cryptographic PN Code:** **{data_obj.get('pn_code', 'PN-847291')}**\n"
                 f"- **Generated By:** {data_obj.get('generated_by', 'Section Controller')}\n"
@@ -147,35 +146,25 @@ class RETRACKAIService:
                 f"*Data Source: Digital PN Handshake Audit Log*"
             )
 
-        # 3. Handle Knowledge RAG Search
+        # 3. Flexible Project Search Engine (RAG over all 19+ knowledge files)
         else:
             rag_docs = retriever.search(user_msg, top_k=3)
             if rag_docs:
                 response_text = self._build_knowledge_response(user_msg, rag_docs, sources)
             else:
-                # Fallback to general project overview if no direct RAG matches
+                # Fallback project overview search response
                 sources.append(KnowledgeSourceMetadata(source="RETRACK Project Documentation", document="project_overview.md", section="Executive Overview"))
                 response_text = (
-                    f"### 🚆 RETRACK – RailSync-AI Overview\n\n"
-                    f"Hello! I am RETRACKAI, the official AI knowledge assistant for RETRACK – RailSync-AI (SIH 2026 Problem Statement 26027).\n\n"
-                    f"RETRACK unifies multi-department maintenance requests (**TMS**, **TDMS**, **SMMS**), cross-references **COA Train Timetables**, "
-                    f"and uses **Google OR-Tools CP-SAT** with **Scikit-Learn Random Forest ML** to schedule joint 5 km block possessions.\n\n"
-                    f"Ask me about:\n"
-                    f"- Project architecture & workflow\n"
-                    f"- TMS vs TDMS vs SMMS vs COA\n"
-                    f"- CP-SAT mathematical optimization & +15 min safety buffer\n"
-                    f"- Digital PN 2-factor handshake protocol\n"
-                    f"- Live trains or critical track defects"
+                    f"### 🚆 RETRACK – RailSync-AI Project Search\n\n"
+                    f"I searched the RETRACK knowledge base for: **\"{user_msg}\"**\n\n"
+                    f"RETRACK – RailSync-AI (SIH 2026 Problem Statement 26027) is an AI-powered railway maintenance planning platform.\n\n"
+                    f"**Key Architectural Highlights:**\n"
+                    f"- **Multi-Department Unified Feeds:** Ingests TMS (Civil), TDMS (Defects), SMMS (Electrical/S&T), and COA (Train schedules).\n"
+                    f"- **AI Predictive Risk Engine:** Scikit-Learn Random Forest Classifier assessing asset failure risks.\n"
+                    f"- **Mathematical Optimizer:** Google OR-Tools CP-SAT MILP solver bundling maintenance jobs within 5 km corridors while enforcing a mandatory **+15 minute safety buffer** around express trains.\n"
+                    f"- **Digital PN Handshake:** 2-Factor cryptographically generated Private Number protocol between Section Controller and Station Master.\n\n"
+                    f"You can search for any topic such as architecture, APIs, database tables, live trains, track defects, or safety rules!"
                 )
-
-        # 4. Apply Viva Mode Prefix Formatting if enabled
-        if req.viva_mode:
-            response_text = (
-                f"### 🎓 VIVA MENTOR ANSWER\n\n"
-                f"**Short Answer:** {response_text.splitlines()[0] if response_text else 'RETRACK is an AI railway maintenance planning platform.'}\n\n"
-                f"**Detailed Viva Explanation:**\n"
-                f"{response_text}"
-            )
 
         # Persist conversation & messages to storage
         try:
@@ -203,7 +192,6 @@ class RETRACKAIService:
                 ChatActionDTO(label="Track Live Trains", target_path="/trains", action_code="SHOW_TRAINS"),
                 ChatActionDTO(label="High-Risk Assets", target_path="/assets", action_code="SHOW_RISK"),
             ],
-            viva_mode=req.viva_mode
         )
 
     def _build_knowledge_response(
@@ -221,7 +209,7 @@ class RETRACKAIService:
             body_parts.append(doc.get("content", ""))
 
         joined_content = "\n\n---\n\n".join(body_parts)
-        return f"### 📘 RETRACK Knowledge Base Output\n\n{joined_content}"
+        return f"### 📘 RETRACK Knowledge Search Results\n\n{joined_content}"
 
 
 retrackai_service = RETRACKAIService()

@@ -16,10 +16,9 @@ class ChatActionDTO(BaseModel):
 class RETRACKAIQueryRequest(BaseModel):
     message: str
     conversation_id: Optional[str] = None
-    viva_mode: bool = False
     model: Optional[str] = "gemini-1.5-pro"
     user_role: Optional[str] = "CONTROLLER"
-    explainer_mode: Optional[str] = None  # e.g. "ARCHITECTURE", "WORKFLOW", "CP_SAT", "VIVA"
+    explainer_mode: Optional[str] = None  # e.g. "ARCHITECTURE", "WORKFLOW", "CP_SAT", "SECURITY"
     summary_mode: Optional[str] = None    # e.g. "30SEC", "1MIN", "2MIN", "5MIN"
 
 
@@ -39,7 +38,6 @@ class RETRACKAIQueryResponse(BaseModel):
     data: Optional[Dict[str, Any]] = None
     sources: List[KnowledgeSourceMetadata] = []
     suggested_actions: List[ChatActionDTO] = []
-    viva_mode: bool = False
 
 
 class ConversationSessionDTO(BaseModel):

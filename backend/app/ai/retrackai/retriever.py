@@ -56,7 +56,7 @@ class KnowledgeRetriever:
 
     def _tokenize(self, text: str) -> List[str]:
         cleaned = re.sub(r"[^\w\s]", " ", text.lower())
-        return [w for w in cleaned.split() if len(w) > 2]
+        return [w for w in cleaned.split() if len(w) > 1]
 
     def search(self, query: str, top_k: int = 3) -> List[Dict[str, Any]]:
         query_words = self._tokenize(query)
@@ -64,6 +64,7 @@ class KnowledgeRetriever:
             return []
 
         scores: List[Tuple[float, Dict[str, Any]]] = []
+        query_lower = query.lower().strip()
 
         for doc in self.documents:
             doc_words = doc["words"]
@@ -80,9 +81,13 @@ class KnowledgeRetriever:
 
                     # Heading match bonus
                     if q_word in doc["section"].lower():
-                        score += 2.5
+                        score += 3.5
                     if q_word in doc["document"].lower():
-                        score += 3.0
+                        score += 4.0
+
+            # Substring exact match boost
+            if query_lower in doc["content"].lower():
+                score += 5.0
 
             if score > 0.0:
                 scores.append((score, doc))

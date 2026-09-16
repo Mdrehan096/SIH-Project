@@ -3,7 +3,6 @@ import {
   Bot,
   X,
   Send,
-  User,
   ShieldCheck,
   Cpu,
   AlertTriangle,
@@ -11,7 +10,6 @@ import {
   Minimize2,
   Copy,
   Check,
-  GraduationCap,
   Search,
   MessageSquare,
   PlusCircle,
@@ -44,7 +42,6 @@ interface ChatMessage {
   sources?: SourceMetadata[];
   suggested_actions?: ChatAction[];
   timestamp: string;
-  viva_mode?: boolean;
   feedback?: 'UP' | 'DOWN';
 }
 
@@ -55,15 +52,16 @@ interface ConversationItem {
 }
 
 const EXPLAINER_BUTTONS = [
-  { label: 'Explain Project', explainer_code: 'ARCHITECTURE', prompt: 'Explain RETRACK project in simple terms' },
-  { label: 'Architecture', explainer_code: 'ARCHITECTURE', prompt: 'Explain the Model-View-Controller architecture of RETRACK' },
-  { label: 'Workflow', explainer_code: 'WORKFLOW', prompt: 'Explain the complete end-to-end system workflow' },
-  { label: 'AI / ML Risk', explainer_code: 'AI_ML', prompt: 'How does the Scikit-Learn Random Forest risk engine work?' },
-  { label: 'CP-SAT Solver', explainer_code: 'CP_SAT', prompt: 'Why do we use Google OR-Tools CP-SAT for block optimization?' },
-  { label: 'TMS / TDMS / SMMS', explainer_code: 'WORKFLOW', prompt: 'What is the difference between TMS, TDMS, SMMS and COA feeds?' },
-  { label: 'Digital PN', explainer_code: 'WORKFLOW', prompt: 'Explain the 2-factor Digital Private Number handshake protocol' },
-  { label: 'Future Scope', explainer_code: 'FUTURE_SCOPE', prompt: 'What is the documented future scope of RETRACK?' },
-  { label: '🎓 Viva Questions', explainer_code: 'VIVA', prompt: 'Give me top presentation and viva questions with short answers' },
+  { label: '🏗️ Architecture', explainer_code: 'ARCHITECTURE', prompt: 'Explain the Model-View-Controller architecture of RETRACK' },
+  { label: '🔄 Workflow', explainer_code: 'WORKFLOW', prompt: 'Explain the complete end-to-end system workflow' },
+  { label: '🤖 AI ML Risk', explainer_code: 'AI_ML', prompt: 'How does the Scikit-Learn Random Forest risk engine work?' },
+  { label: '🧩 CP-SAT Solver', explainer_code: 'CP_SAT', prompt: 'Why do we use Google OR-Tools CP-SAT for block optimization?' },
+  { label: '🚆 Live Trains', explainer_code: 'WORKFLOW', prompt: 'Show live COA train operations and timetables' },
+  { label: '⚠️ TDMS Defects', explainer_code: 'WORKFLOW', prompt: 'Show critical track defects from TDMS' },
+  { label: '🔑 Digital PN', explainer_code: 'WORKFLOW', prompt: 'Explain the 2-factor Digital Private Number handshake protocol' },
+  { label: '📊 Database', explainer_code: 'DATABASE', prompt: 'Explain RETRACK database schema and PostgreSQL tables' },
+  { label: '🔒 Security', explainer_code: 'SECURITY', prompt: 'Explain RETRACK security architecture and JWT RBAC' },
+  { label: '🔮 Future Scope', explainer_code: 'FUTURE_SCOPE', prompt: 'What is the documented future scope of RETRACK?' },
 ];
 
 const QUICK_PROMPT_CHIPS = [
@@ -72,9 +70,9 @@ const QUICK_PROMPT_CHIPS = [
   'Show live COA trains',
   'Why use CP-SAT?',
   'Explain 5 km bundling',
-  'Explain Digital PN',
-  'What is COA?',
-  'Explain project in 30 seconds',
+  'Explain Digital PN protocol',
+  'What are TMS, TDMS, SMMS feeds?',
+  'How does +15 min safety buffer work?',
 ];
 
 export const AiChatbot: React.FC = () => {
@@ -82,11 +80,13 @@ export const AiChatbot: React.FC = () => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
   const [showSidebar, setShowSidebar] = useState<boolean>(false);
-  const [vivaMode, setVivaMode] = useState<boolean>(false);
   const selectedModel = 'gemini-1.5-pro';
   const [inputMsg, setInputMsg] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  // Search filter state for live top bar project search
+  const [topSearchText, setTopSearchText] = useState<string>('');
 
   // Conversation history state
   const [activeConvId, setActiveConvId] = useState<string>(`conv-${Date.now().toString().slice(-6)}`);
@@ -99,7 +99,7 @@ export const AiChatbot: React.FC = () => {
     {
       id: 'msg-init',
       sender: 'assistant',
-      text: `Hello ${user?.full_name || 'Officer'}. I am **RETRACKAI**, the official project-specific AI knowledge assistant for RETRACK – RailSync-AI (SIH 2026 Problem Statement 26027).\n\nAsk me anything about project architecture, multi-department feeds (TMS, TDMS, SMMS, COA), CP-SAT optimization, AI risk scoring, or live application data!`,
+      text: `Hello ${user?.full_name || 'Officer'}. I am **RETRACKAI Search & Project Knowledge Assistant** for RETRACK – RailSync-AI (SIH 2026 Problem Statement 26027).\n\nSearch or ask me anything about the RETRACK project—architecture, system workflows, feeds (TMS, TDMS, SMMS, COA), CP-SAT optimizer, AI risk scoring, database schemas, APIs, or live operational data!`,
       model_used: 'gemini-1.5-pro',
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       sources: [
@@ -146,7 +146,7 @@ export const AiChatbot: React.FC = () => {
       {
         id: `msg-${Date.now()}`,
         sender: 'assistant',
-        text: `New RETRACKAI conversation started. How can I assist you with RETRACK project documentation or live operational data?`,
+        text: `New RETRACKAI conversation started. Search or ask anything about RETRACK project documentation or live operational feeds!`,
         model_used: selectedModel,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       },
@@ -204,7 +204,6 @@ export const AiChatbot: React.FC = () => {
         body: JSON.stringify({
           message: queryText,
           conversation_id: activeConvId,
-          viva_mode: vivaMode,
           model: selectedModel,
           user_role: user?.role || 'CONTROLLER',
           explainer_mode: explainerCode,
@@ -223,7 +222,6 @@ export const AiChatbot: React.FC = () => {
           sources: data.sources || [],
           suggested_actions: data.suggested_actions || [],
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          viva_mode: data.viva_mode,
         };
         setMessages((prev) => [...prev, assistantMsg]);
         setLoading(false);
@@ -233,15 +231,13 @@ export const AiChatbot: React.FC = () => {
       // Fallback
     }
 
-    // High-Performance Fallback Generator
+    // High-Performance Fallback Search Generator
     const lower = queryText.toLowerCase();
-    let replyText = `### 🚆 RETRACKAI Project Knowledge Assistant\n\n`;
+    let replyText = `### 🚆 RETRACKAI Project Knowledge Search Results\n\n`;
     let dataType = 'SYSTEM_INFO';
     let dataObj: any = null;
 
-    if (vivaMode) {
-      replyText += `### 🎓 VIVA MENTOR ANSWER\n\n**Short Answer:** RETRACK is an AI decision-support platform for Indian Railways that unifies multi-department maintenance feeds (TMS, TDMS, SMMS, COA) and uses Google OR-Tools CP-SAT to automatically schedule 5 km bundled maintenance blocks.\n\n**Key Technical Rationale:**\n- Reduces corridor downtime by up to **40%**.\n- Maintains a mandatory **+15 minute safety buffer** around express trains.`;
-    } else if (lower.includes('tdms') || lower.includes('defect')) {
+    if (lower.includes('tdms') || lower.includes('defect') || lower.includes('crack')) {
       dataType = 'ASSET_RISKS';
       replyText += `### ⚠️ Live TDMS Track Defect Summary\n\nRetrieved critical defect records from the Track Defect Management System (TDMS) feed.\n\n- **Primary Threat:** Rail cracks and ultrasonic flaw alerts at KM 124.5 (\`TRK-124\`).\n- **Recommended Action:** Schedule joint maintenance block possession during 02:00-03:00 AM window.`;
       dataObj = {
@@ -267,7 +263,6 @@ export const AiChatbot: React.FC = () => {
         data: dataObj,
         sources: [{ source: 'RETRACK Project Documentation', document: 'project_overview.md', section: 'Overview' }],
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        viva_mode: vivaMode,
       },
     ]);
     setLoading(false);
@@ -289,19 +284,19 @@ export const AiChatbot: React.FC = () => {
             <Bot className="w-5 h-5 text-sky-400 animate-pulse" />
           </div>
           <div className="text-left">
-            <span className="text-xs font-bold block leading-none">RETRACKAI Assistant</span>
-            <span className="text-[10px] text-sky-200/80 font-mono block mt-0.5">Project Knowledge & Live Feed AI</span>
+            <span className="text-xs font-bold block leading-none">RETRACKAI Search & AI</span>
+            <span className="text-[10px] text-sky-200/80 font-mono block mt-0.5">Project Search & AI Knowledge</span>
           </div>
         </button>
       )}
 
-      {/* Main Chat Panel */}
+      {/* Main Chat & Search Panel */}
       {isOpen && (
         <div
           className={`fixed bottom-6 right-6 bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl flex z-50 overflow-hidden transition-all duration-300 ${
             isExpanded
               ? 'w-[900px] max-w-[calc(100vw-3rem)] h-[720px] max-h-[calc(100vh-4rem)]'
-              : 'w-[480px] max-w-[calc(100vw-2rem)] h-[620px]'
+              : 'w-[520px] max-w-[calc(100vw-2rem)] h-[650px]'
           }`}
         >
           {/* Collapsible Sidebar for History & Search */}
@@ -361,7 +356,7 @@ export const AiChatbot: React.FC = () => {
 
               <div className="text-[10px] font-mono text-slate-500 border-t border-slate-800 pt-2 flex items-center justify-between">
                 <span>RETRACK Knowledge Base</span>
-                <span className="text-emerald-400 font-bold">20 Docs Active</span>
+                <span className="text-emerald-400 font-bold">Project Search Active</span>
               </div>
             </div>
           )}
@@ -384,36 +379,21 @@ export const AiChatbot: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="font-bold text-slate-100 text-xs flex items-center space-x-2">
-                    <span>RETRACKAI</span>
+                    <span>RETRACKAI Search</span>
                     <span className="px-2 py-0.2 rounded-full bg-emerald-950 border border-emerald-800 text-emerald-400 text-[9px] font-mono font-bold flex items-center space-x-1">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                      <span>ONLINE</span>
+                      <span>SEARCH ENGINE ONLINE</span>
                     </span>
                   </h3>
-                  <p className="text-[10px] text-slate-400 font-mono">Project Knowledge & Data Assistant</p>
+                  <p className="text-[10px] text-slate-400 font-mono">Full Project Knowledge & Live Data Search</p>
                 </div>
               </div>
 
-              {/* Controls: Viva Mode Toggle + Model Selector + View Buttons */}
+              {/* Controls: Project Search Indicator + View Buttons */}
               <div className="flex items-center space-x-2">
-                {/* 🎓 Viva Mode Toggle Button */}
-                <button
-                  onClick={() => setVivaMode(!vivaMode)}
-                  className={`px-2.5 py-1 rounded-lg border font-mono text-[10px] font-bold flex items-center space-x-1 transition-all ${
-                    vivaMode
-                      ? 'bg-amber-500 text-slate-950 border-amber-400 shadow'
-                      : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-amber-400'
-                  }`}
-                  title="Toggle Viva / Presentation Mode"
-                >
-                  <GraduationCap className="w-3.5 h-3.5" />
-                  <span>{vivaMode ? 'VIVA MODE ON' : 'Viva Mode'}</span>
-                </button>
-
-                {/* ChatGPT-style Project Trained Indicator Badge */}
                 <div className="hidden sm:flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-sky-950/80 border border-sky-800/80 text-sky-300 font-mono text-[10px] font-bold">
                   <Sparkles className="w-3 h-3 text-sky-400 animate-pulse" />
-                  <span>RETRACKAI v2.0 (Project Trained)</span>
+                  <span>Project Search Active</span>
                 </div>
 
                 <button
@@ -430,6 +410,35 @@ export const AiChatbot: React.FC = () => {
                   <X className="w-4 h-4" />
                 </button>
               </div>
+            </div>
+
+            {/* Quick Interactive Search Bar Header */}
+            <div className="bg-slate-950 px-3 py-2 border-b border-slate-800/80">
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (topSearchText.trim()) {
+                    handleSend(topSearchText);
+                    setTopSearchText('');
+                  }
+                }}
+                className="relative"
+              >
+                <Search className="w-3.5 h-3.5 text-sky-400 absolute left-3 top-2.5" />
+                <input
+                  type="text"
+                  placeholder="Search anything about RETRACK project (e.g. CP-SAT, defects, TMS, trains, safety)..."
+                  value={topSearchText}
+                  onChange={(e) => setTopSearchText(e.target.value)}
+                  className="w-full bg-slate-900 border border-sky-900/60 rounded-xl pl-8 pr-16 py-1.5 text-xs text-slate-100 placeholder-slate-400 focus:outline-none focus:border-sky-500 font-mono"
+                />
+                <button
+                  type="submit"
+                  className="absolute right-1 top-1 bottom-1 px-2.5 bg-sky-600 hover:bg-sky-500 text-slate-950 font-bold rounded-lg text-[10px] font-mono cursor-pointer transition-colors"
+                >
+                  Search
+                </button>
+              </form>
             </div>
 
             {/* Explainer Mode Quick Actions Header Bar */}
@@ -450,54 +459,42 @@ export const AiChatbot: React.FC = () => {
               {messages.map((m) => (
                 <div
                   key={m.id}
-                  className={`flex flex-col ${m.sender === 'user' ? 'items-end' : 'items-start'} space-y-1`}
+                  className={`flex space-x-3 ${m.sender === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
-                  {/* Sender Header */}
-                  <div className="flex items-center space-x-2 text-[10px] text-slate-500 font-mono">
-                    {m.sender === 'user' ? (
-                      <>
-                        <span>{user?.full_name || 'Officer'}</span>
-                        <User className="w-3 h-3 text-sky-400" />
-                      </>
-                    ) : (
-                      <>
-                        <Bot className="w-3 h-3 text-emerald-400" />
-                        <span className="font-bold text-slate-300">RETRACKAI</span>
-                        {m.viva_mode && (
-                          <span className="px-1.5 py-0.2 rounded bg-amber-950 text-amber-300 font-bold border border-amber-800">
-                            🎓 VIVA MODE
-                          </span>
-                        )}
-                        <span className="px-1.5 py-0.2 rounded bg-slate-900 text-sky-400 text-[9px] border border-slate-800">
-                          {m.model_used || selectedModel}
-                        </span>
-                      </>
-                    )}
-                    <span>• {m.timestamp}</span>
-                  </div>
+                  {m.sender === 'assistant' && (
+                    <div className="p-1.5 rounded-xl bg-sky-950 border border-sky-800 text-sky-400 shrink-0 h-fit mt-0.5">
+                      <Bot className="w-4 h-4" />
+                    </div>
+                  )}
 
-                  {/* Message Bubble */}
                   <div
-                    className={`p-4 rounded-2xl max-w-[92%] leading-relaxed ${
+                    className={`max-w-[85%] rounded-2xl p-3.5 ${
                       m.sender === 'user'
-                        ? 'bg-gradient-to-r from-sky-600 to-blue-600 text-white rounded-br-none shadow-md'
-                        : 'bg-slate-900 border border-slate-800 text-slate-200 rounded-bl-none shadow-lg space-y-3'
+                        ? 'bg-gradient-to-r from-sky-600 to-blue-600 text-white rounded-tr-none'
+                        : 'bg-slate-900 border border-slate-800 text-slate-200 rounded-tl-none space-y-2'
                     }`}
                   >
-                    <div className="whitespace-pre-wrap font-sans text-xs leading-relaxed">
+                    <div className="flex items-center justify-between text-[10px] opacity-75 font-mono mb-1">
+                      <span>{m.sender === 'user' ? 'You' : 'RETRACKAI Search'}</span>
+                      <span>{m.timestamp}</span>
+                    </div>
+
+                    <div className="prose prose-invert prose-xs max-w-none text-slate-200 leading-relaxed font-sans whitespace-pre-wrap">
                       {m.text}
                     </div>
 
-                    {/* Knowledge Metadata Sources */}
-                    {m.sources && m.sources.length > 0 && (
-                      <div className="pt-2 border-t border-slate-800/80 flex flex-wrap gap-1 text-[10px] font-mono text-slate-400">
-                        <span className="text-slate-500 flex items-center space-x-1">
-                          <BookOpen className="w-3 h-3 text-sky-400" />
-                          <span>Source:</span>
-                        </span>
-                        {m.sources.map((s, sIdx) => (
-                          <span key={sIdx} className="px-2 py-0.5 rounded bg-slate-950 border border-slate-800 text-sky-300 font-bold">
-                            {s.document} ({s.section})
+                    {/* Knowledge Sources Metadata Badges */}
+                    {m.sender === 'assistant' && m.sources && m.sources.length > 0 && (
+                      <div className="mt-2 pt-2 border-t border-slate-800 flex flex-wrap gap-1.5">
+                        {m.sources.map((s, i) => (
+                          <span
+                            key={i}
+                            className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-md bg-slate-950 border border-slate-800 text-[10px] font-mono text-sky-300"
+                          >
+                            <BookOpen className="w-2.5 h-2.5 text-sky-400" />
+                            <span>
+                              {s.document} ({s.section})
+                            </span>
                           </span>
                         ))}
                       </div>
@@ -595,7 +592,7 @@ export const AiChatbot: React.FC = () => {
               >
                 <input
                   type="text"
-                  placeholder={vivaMode ? 'Ask a Viva / Presentation Question...' : 'Ask RETRACKAI...'}
+                  placeholder="Search or ask anything about RETRACK project..."
                   value={inputMsg}
                   onChange={(e) => setInputMsg(e.target.value)}
                   className="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-sky-500 placeholder-slate-500"
@@ -614,7 +611,7 @@ export const AiChatbot: React.FC = () => {
                   <ShieldCheck className="w-3 h-3 text-emerald-400" />
                   <span>Authorized Role: <strong>{user?.role || 'CONTROLLER'}</strong></span>
                 </span>
-                <span>Grounding: <strong>RETRACK Knowledge Base Only</strong></span>
+                <span>Search Engine: <strong>RETRACK Knowledge Base & Live Feeds</strong></span>
               </div>
             </div>
           </div>
