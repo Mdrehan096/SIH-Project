@@ -2,7 +2,7 @@ import uuid
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from app.schemas.maintenance import MaintenanceRequestCreate, MaintenanceRequestUpdate, MaintenanceRequestResponse
-from app.db.queries import get_all_maintenance_requests, get_maintenance_request_by_id, _MOCK_MAINTENANCE_REQUESTS
+from app.db.queries import get_all_maintenance_requests, get_maintenance_request_by_id, update_maintenance_request_status, _MOCK_MAINTENANCE_REQUESTS
 from app.core.security import get_current_user
 from datetime import datetime, timezone
 
@@ -17,9 +17,9 @@ async def list_maintenance_requests(
 ):
     requests = get_all_maintenance_requests()
     if department:
-        requests = [r for r in requests if r["department_id"] == department or r.get("department") == department]
+        requests = [r for r in requests if r.get("department_id") == department or r.get("department") == department]
     if status_filter:
-        requests = [r for r in requests if r["status"] == status_filter]
+        requests = [r for r in requests if r.get("status") == status_filter]
     return requests
 
 
@@ -72,10 +72,17 @@ async def update_maintenance_request(
     req = get_maintenance_request_by_id(request_id)
     if not req:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Maintenance request '{request_id}' not found.")
+    
+    new_status = payload.status or req.get("status", "PENDING")
+    new_priority = payload.priority or req.get("priority")
+    
+    updated = update_maintenance_request_status(request_id, new_status, new_priority)
+    if updated:
+        return updated
+    
+    req["status"] = new_status
     if payload.priority:
         req["priority"] = payload.priority
-    if payload.status:
-        req["status"] = payload.status
     if payload.estimated_duration_minutes:
         req["estimated_duration_minutes"] = payload.estimated_duration_minutes
     if payload.location_km:

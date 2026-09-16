@@ -1,19 +1,4 @@
-from app.services.whatif_service import whatif_service
 from app.services.pn_service import pn_service
-
-
-def test_whatif_simulation_engine():
-    res = whatif_service.run_simulation(
-        section_id="SEC-NDLS-AGC-01",
-        train_delay_minutes=20,
-        train_number="12951",
-        maintenance_duration_delta=15
-    )
-    assert res["success"] is True
-    assert "original_plan" in res
-    assert "new_plan" in res
-    assert res["tasks_preserved"] >= 1
-    assert res["safety_status"] in ["SAFE", "CONFLICT_DETECTED"]
 
 
 def test_digital_pn_lifecycle():

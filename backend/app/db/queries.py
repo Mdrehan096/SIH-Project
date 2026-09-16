@@ -188,7 +188,7 @@ _MOCK_MAINTENANCE_REQUESTS = [
         "created_at": "2026-09-06T10:40:00Z"
     },
     {
-        "id": "10000000-0000-0000-0000-00000000010",
+        "id": "10000000-0000-0000-0000-000000000010",
         "request_id": "SMMS-010",
         "source_system": "SMMS",
         "department_id": "SIGNAL_TELECOM",
@@ -286,9 +286,38 @@ def get_all_maintenance_requests() -> List[Dict[str, Any]]:
 def get_maintenance_request_by_id(request_id: str) -> Optional[Dict[str, Any]]:
     requests = get_all_maintenance_requests()
     for req in requests:
-        if req["request_id"] == request_id or req["id"] == request_id:
+        if req.get("request_id") == request_id or req.get("id") == request_id:
             return req
     return None
+
+
+def update_maintenance_request_status(request_id: str, new_status: str, priority: Optional[str] = None) -> Optional[Dict[str, Any]]:
+    # 1. Update in-memory list
+    found = None
+    for req in _MOCK_MAINTENANCE_REQUESTS:
+        if req.get("request_id") == request_id or req.get("id") == request_id:
+            req["status"] = new_status
+            if priority:
+                req["priority"] = priority
+            found = req
+            break
+
+    # 2. Update Supabase if active
+    if db_manager.supabase_client:
+        try:
+            update_data = {"status": new_status}
+            if priority:
+                update_data["priority"] = priority
+
+            res = db_manager.supabase_client.table("maintenance_requests").update(update_data).eq("request_id", request_id).execute()
+            if not res.data:
+                res = db_manager.supabase_client.table("maintenance_requests").update(update_data).eq("id", request_id).execute()
+            if res.data and len(res.data) > 0:
+                found = res.data[0]
+        except Exception as e:
+            logger.error(f"Error updating maintenance request status in Supabase: {e}")
+
+    return found
 
 
 def get_all_trains() -> List[Dict[str, Any]]:
@@ -302,6 +331,14 @@ def get_all_trains() -> List[Dict[str, Any]]:
 
 
 def get_safety_constraints() -> List[Dict[str, Any]]:
+    if db_manager.supabase_client:
+        try:
+            res = db_manager.supabase_client.table("constraints").select("*").execute()
+            if res.data and len(res.data) > 0:
+                return res.data
+        except Exception as e:
+            logger.error(f"Error fetching safety constraints from Supabase: {e}")
+
     return [
         {
             "rule_code": "RULE-01",

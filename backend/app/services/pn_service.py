@@ -2,6 +2,7 @@ import random
 import logging
 from typing import Dict, Any, Optional
 from datetime import datetime, timezone
+from app.db.connection import db_manager
 
 logger = logging.getLogger("retrack.pn")
 
@@ -10,6 +11,7 @@ class DigitalPNService:
     """
     Digital Private Number (PN) Exchange & Handshake Service.
     Implements secure PN generation and Station Master verification protocol.
+    Persists PN handshakes directly to Supabase PostgreSQL database when connected.
     """
 
     def __init__(self):
@@ -31,6 +33,17 @@ class DigitalPNService:
             "station_code": None
         }
         self._pn_store[block_id] = record
+
+        if db_manager.supabase_client:
+            try:
+                db_manager.supabase_client.table("pn_requests").upsert({
+                    "pn_code": pn_code,
+                    "status": "GENERATED",
+                    "generated_at": now
+                }, on_conflict="pn_code").execute()
+            except Exception as e:
+                logger.warning(f"Note on Supabase PN insert: {e}")
+
         logger.info(f"Generated Digital PN '{pn_code}' for Block '{block_id}' by {user_name}.")
         return record
 
@@ -45,6 +58,16 @@ class DigitalPNService:
         record["verified_at"] = now
         record["station_code"] = station_code
         self._pn_store[block_id] = record
+
+        if db_manager.supabase_client:
+            try:
+                db_manager.supabase_client.table("pn_requests").upsert({
+                    "pn_code": pn_code,
+                    "status": "VERIFIED",
+                    "generated_at": now
+                }, on_conflict="pn_code").execute()
+            except Exception as e:
+                logger.warning(f"Note on Supabase PN verification update: {e}")
 
         logger.info(f"Verified Digital PN '{pn_code}' for Block '{block_id}' at Station {station_code} by {user_name}.")
         return record

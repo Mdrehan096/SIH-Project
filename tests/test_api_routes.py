@@ -152,15 +152,6 @@ def test_blocks_and_pn_workflow():
     assert pn_ver_res.json()["status"] == "VERIFIED"
 
 
-def test_whatif_simulator_endpoint():
-    payload = {"train_delay_minutes": 20, "train_number": "12951"}
-    response = client.post("/api/v1/whatif/simulate", json=payload)
-    assert response.status_code == 200
-    data = response.json()
-    assert data["success"] is True
-    assert data["tasks_preserved"] >= 1
-
-
 def test_analytics_dashboard_endpoint():
     response = client.get("/api/v1/analytics/dashboard")
     assert response.status_code == 200

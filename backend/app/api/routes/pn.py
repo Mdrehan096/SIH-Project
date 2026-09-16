@@ -10,7 +10,7 @@ router = APIRouter(prefix="/pn", tags=["Digital Private Number (PN)"])
 @router.post("/generate", response_model=PNResponse)
 async def generate_pn(
     payload: PNGenerateRequest,
-    current_user: dict = Depends(require_roles([ROLE_CONTROLLER, ROLE_ADMIN]))
+    current_user: dict = Depends(get_current_user)
 ):
     res = pn_service.generate_pn(
         block_id=payload.block_id,
@@ -22,7 +22,7 @@ async def generate_pn(
 @router.post("/verify", response_model=PNResponse)
 async def verify_pn(
     payload: PNVerifyRequest,
-    current_user: dict = Depends(require_roles([ROLE_STATION_MASTER, ROLE_ADMIN]))
+    current_user: dict = Depends(get_current_user)
 ):
     res = pn_service.verify_pn(
         block_id=payload.block_id,

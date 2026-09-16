@@ -3,7 +3,6 @@ from app.services.ingestion_service import ingestion_service
 from app.services.bundling_service import bundling_engine
 from app.services.safety_service import safety_engine
 from app.services.optimization_service import optimization_service
-from app.services.whatif_service import whatif_service
 from app.services.pn_service import pn_service
 from ai.risk_model import predict_risk_score
 
@@ -50,17 +49,7 @@ def test_complete_sih_2026_demo_scenario():
     opt_blk = opt_res["optimal_block"]
     print(f"Optimal Block {opt_blk['block_id']}: {opt_blk['start_time']} - {opt_blk['end_time']} AM (Score: {opt_blk['optimization_score']})")
 
-    print("\n=== STEP 5: Dynamic What-If Simulation (20 min Train Delay) ===")
-    whatif_res = whatif_service.run_simulation(
-        section_id="SEC-NDLS-AGC-01",
-        train_delay_minutes=20,
-        train_number="12951",
-        maintenance_duration_delta=15
-    )
-    assert whatif_res["success"] is True
-    print(f"What-If Result: {whatif_res['impact_summary']}")
-
-    print("\n=== STEP 6: Controller Approval & Digital PN Handshake ===")
+    print("\n=== STEP 5: Controller Approval & Digital PN Handshake ===")
     block_id = opt_blk["block_id"]
     
     # Generate PN by Section Controller

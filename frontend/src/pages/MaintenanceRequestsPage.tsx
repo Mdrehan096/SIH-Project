@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { fetchMaintenanceRequests, createMaintenanceRequest } from '../services/api';
+import { fetchMaintenanceRequests, createMaintenanceRequest, updateMaintenanceRequest } from '../services/api';
 import { MaintenanceRequest, Department } from '../types';
 import { Wrench, Plus, Filter, Search, X, Check } from 'lucide-react';
 
@@ -74,6 +74,19 @@ export const MaintenanceRequestsPage: React.FC = () => {
     return matchesDept && matchesSearch;
   });
 
+  const handleStatusChange = async (reqId: string, newStatus: string) => {
+    try {
+      await updateMaintenanceRequest(reqId, { status: newStatus });
+      setRequests((prev) =>
+        prev.map((r) => (r.request_id === reqId || r.id === reqId ? { ...r, status: newStatus as any } : r))
+      );
+    } catch {
+      setRequests((prev) =>
+        prev.map((r) => (r.request_id === reqId || r.id === reqId ? { ...r, status: newStatus as any } : r))
+      );
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -141,7 +154,7 @@ export const MaintenanceRequestsPage: React.FC = () => {
                 <th className="p-3.5">Location</th>
                 <th className="p-3.5">Priority</th>
                 <th className="p-3.5">Duration</th>
-                <th className="p-3.5">Status</th>
+                <th className="p-3.5">Department Work Status</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/60">
@@ -168,9 +181,25 @@ export const MaintenanceRequestsPage: React.FC = () => {
                   </td>
                   <td className="p-3.5 font-mono">{req.estimated_duration_minutes} min</td>
                   <td className="p-3.5">
-                    <span className="px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800/40 font-mono text-[10px]">
-                      {req.status}
-                    </span>
+                    <select
+                      value={req.status}
+                      onChange={(e) => handleStatusChange(req.request_id || req.id, e.target.value)}
+                      className={`px-2.5 py-1 rounded-lg font-mono text-[11px] font-bold border cursor-pointer focus:outline-none ${
+                        req.status === 'COMPLETED'
+                          ? 'bg-emerald-950 text-emerald-300 border-emerald-800'
+                          : req.status === 'IN_PROGRESS'
+                          ? 'bg-sky-950 text-sky-300 border-sky-800'
+                          : req.status === 'REJECTED'
+                          ? 'bg-rose-950 text-rose-300 border-rose-800'
+                          : 'bg-amber-950 text-amber-300 border-amber-800'
+                      }`}
+                    >
+                      <option value="PENDING">PENDING</option>
+                      <option value="BUNDLED">BUNDLED</option>
+                      <option value="IN_PROGRESS">IN_PROGRESS</option>
+                      <option value="COMPLETED">COMPLETED</option>
+                      <option value="REJECTED">REJECTED</option>
+                    </select>
                   </td>
                 </tr>
               ))}

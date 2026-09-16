@@ -28,10 +28,26 @@ class Settings(BaseSettings):
             return json.loads(v)
         return v
 
-    SUPABASE_URL: str = "https://synthetic-supabase-id.supabase.co"
-    SUPABASE_ANON_KEY: str = "synthetic-anon-key"
-    SUPABASE_SERVICE_ROLE_KEY: str = "synthetic-service-key"
-    DATABASE_URL: str = "postgresql://postgres:postgres@localhost:5432/railsync"
+    SUPABASE_URL: str = "https://aevaeyhswuasgjbkgiqq.supabase.co"
+    SUPABASE_ANON_KEY: str = "sb_publishable_nq5c4ydgZ6VRH8aUTkIAVg_An1qU9_4"
+    SUPABASE_PUBLISHABLE_KEY: str = "sb_publishable_nq5c4ydgZ6VRH8aUTkIAVg_An1qU9_4"
+    SUPABASE_SERVICE_ROLE_KEY: str = ""
+    SUPABASE_SECRET_KEY: str = ""
+    SUPABASE_JWKS_URL: str = "https://aevaeyhswuasgjbkgiqq.supabase.co/auth/v1/.well-known/jwks.json"
+    DATABASE_URL: str = "postgresql://postgres:password@localhost:5432/postgres"
+    DIRECT_URL: str = "postgresql://postgres:password@localhost:5432/postgres"
+
+    MONGODB_URI: str = "mongodb://localhost:27017"
+    MONGODB_DATABASE: str = "retrack_db"
+
+    MAPBOX_TOKEN: str = "pk.eyJ1IjoicmFpbHN5bmMiLCJhIjoiY2xzemhkdWp6MHdpaTJrbjJpdGZxeGV0biJ9.dummy_mapbox_token"
+
+    AI_PROVIDER: str = "google_gemini"
+    AI_API_KEY: str = "demo-ai-api-key"
+    AI_MODEL: str = "gemini-1.5-pro"
+
+    SIMULATION_ENABLED: bool = True
+    SIMULATION_INTERVAL: int = 10
 
     JWT_SECRET: str = "retrack_railsync_ai_hackathon_super_secret_jwt_key_2026"
     JWT_ALGORITHM: str = "HS256"

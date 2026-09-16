@@ -18,9 +18,18 @@ from app.api.routes import (
     safety,
     optimizer,
     blocks,
-    whatif,
     pn,
     analytics,
+    divisions,
+    zones,
+    distance,
+    chat,
+    audit,
+    notifications,
+    reports,
+    workflow,
+    admin,
+    appearance,
 )
 
 # Set up logging
@@ -89,9 +98,18 @@ app.include_router(bundling.router, prefix=api_v1_prefix)
 app.include_router(safety.router, prefix=api_v1_prefix)
 app.include_router(optimizer.router, prefix=api_v1_prefix)
 app.include_router(blocks.router, prefix=api_v1_prefix)
-app.include_router(whatif.router, prefix=api_v1_prefix)
 app.include_router(pn.router, prefix=api_v1_prefix)
 app.include_router(analytics.router, prefix=api_v1_prefix)
+app.include_router(divisions.router, prefix=api_v1_prefix)
+app.include_router(zones.router, prefix=api_v1_prefix)
+app.include_router(distance.router, prefix=api_v1_prefix)
+app.include_router(chat.router, prefix=api_v1_prefix)
+app.include_router(audit.router, prefix=api_v1_prefix)
+app.include_router(notifications.router, prefix=api_v1_prefix)
+app.include_router(reports.router, prefix=api_v1_prefix)
+app.include_router(workflow.router, prefix=api_v1_prefix)
+app.include_router(admin.router, prefix=api_v1_prefix)
+app.include_router(appearance.router, prefix=api_v1_prefix)
 
 
 @app.get("/", tags=["Health"])
