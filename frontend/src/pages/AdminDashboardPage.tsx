@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { ShieldCheck, Users, RefreshCw } from 'lucide-react';
-import { PresentationWorkflowSimulator } from '../components/PresentationWorkflowSimulator';
 
 interface AdminMetrics {
   total_users: number;
@@ -85,9 +84,6 @@ export const AdminDashboardPage: React.FC = () => {
           <span>Refresh Metrics</span>
         </button>
       </div>
-
-      {/* Live Presentation Workflow Simulator */}
-      <PresentationWorkflowSimulator onComplete={loadAdminData} />
 
       {/* Top System Metrics Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-4 gap-4">

@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { fetchMaintenanceRequests, createMaintenanceRequest, updateMaintenanceRequest } from '../services/api';
 import { MaintenanceRequest, Department } from '../types';
 import { Wrench, Plus, Filter, Search, X, Check } from 'lucide-react';
-import { PresentationWorkflowSimulator } from '../components/PresentationWorkflowSimulator';
 
 const defaultRequests: MaintenanceRequest[] = [
   { id: '1', request_id: 'TMS-001', source_system: 'TMS', department_id: 'CIVIL', asset_id: 'TRK-120', task_type: 'Mainline Rail Joint Replacement', location_km: 120.0, priority: 'HIGH', severity: 78, estimated_duration_minutes: 45, required_block_type: 'TRAFFIC_BLOCK', safety_requirements: ['SPEED_RESTRICTION_30KMH'], status: 'BUNDLED', created_at: '2026-09-06T10:00:00Z' },
@@ -108,9 +107,6 @@ export const MaintenanceRequestsPage: React.FC = () => {
           <span>New Request</span>
         </button>
       </div>
-
-      {/* Live TMS Presentation Workflow Stepper Simulator */}
-      <PresentationWorkflowSimulator onComplete={loadRequests} />
 
       {/* Filter & Search Bar */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
