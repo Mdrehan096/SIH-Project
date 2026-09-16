@@ -1,10 +1,12 @@
 import logging
-from fastapi import APIRouter, Depends, Query, HTTPException
+from fastapi import APIRouter, Depends, Query, HTTPException, status
+from fastapi.responses import StreamingResponse
 from typing import Dict, Any, Optional, List
 from pydantic import BaseModel
 
 from app.core.security import get_current_user
 from app.ai.retrackai.service import retrackai_service
+from app.ai.retrackai.retriever import retriever
 from app.ai.retrackai.schemas import (
     RETRACKAIQueryRequest,
     RETRACKAIQueryResponse,
@@ -13,12 +15,18 @@ from app.ai.retrackai.schemas import (
 from app.db.queries import (
     get_retrackai_conversations,
     get_retrackai_messages,
-    search_retrackai_conversations
+    search_retrackai_conversations,
+    rename_retrackai_conversation,
+    delete_retrackai_conversation,
 )
 
 logger = logging.getLogger("retrack.chat")
 
 router = APIRouter(prefix="/chat", tags=["RETRACKAI Project Knowledge Assistant"])
+
+
+class RenameConversationRequest(BaseModel):
+    title: str
 
 
 @router.post("/query", response_model=RETRACKAIQueryResponse)
@@ -36,6 +44,22 @@ async def query_retrack_ai(
         return res
     except Exception as e:
         logger.error(f"Error processing RETRACKAI query: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/stream")
+async def stream_retrack_ai(
+    payload: RETRACKAIQueryRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Streaming SSE endpoint for ChatGPT-like token streaming responses.
+    """
+    try:
+        generator = retrackai_service.process_query_stream(req=payload, current_user=current_user)
+        return StreamingResponse(generator, media_type="text/event-stream")
+    except Exception as e:
+        logger.error(f"Error streaming RETRACKAI query: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -63,6 +87,55 @@ async def get_conversation_messages(
 ):
     """Retrieves message history stream for a given conversation ID."""
     return get_retrackai_messages(conversation_id=conversation_id)
+
+
+@router.patch("/conversations/{conversation_id}")
+async def rename_conversation(
+    conversation_id: str,
+    payload: RenameConversationRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """Renames a conversation title."""
+    rename_retrackai_conversation(conversation_id, payload.title)
+    return {"success": True, "conversation_id": conversation_id, "title": payload.title}
+
+
+@router.delete("/conversations/{conversation_id}")
+async def delete_conversation(
+    conversation_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Deletes a conversation and its messages."""
+    delete_retrackai_conversation(conversation_id)
+    return {"success": True, "conversation_id": conversation_id, "status": "Deleted"}
+
+
+@router.post("/knowledge/reindex")
+async def reindex_knowledge_base(current_user: dict = Depends(get_current_user)):
+    """Triggers a re-index of knowledge documents in backend/app/ai/retrackai/knowledge/."""
+    retriever._load_and_index_knowledge()
+    return {
+        "success": True,
+        "indexed_documents_count": len(retriever.documents),
+        "status": "Knowledge Base Reindexed Successfully"
+    }
+
+
+@router.get("/knowledge/documents")
+async def list_knowledge_documents(current_user: dict = Depends(get_current_user)):
+    """Lists indexed knowledge documents in the RETRACKAI RAG knowledge base."""
+    docs = []
+    seen = set()
+    for d in retriever.documents:
+        doc_id = d.get("doc_id")
+        if doc_id not in seen:
+            seen.add(doc_id)
+            docs.append({
+                "doc_id": doc_id,
+                "document": d.get("document"),
+                "filename": d.get("filename")
+            })
+    return {"total": len(docs), "documents": docs}
 
 
 @router.post("/feedback")

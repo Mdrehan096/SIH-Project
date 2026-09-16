@@ -1,14 +1,18 @@
 """
 RETRACKAI Service Orchestrator
-Main AI service orchestrating query classification, knowledge retrieval (RAG),
-live application data tools, conversation history, and prompt construction.
+Main AI service orchestrating query rewriting, intent classification, knowledge retrieval (RAG),
+live application data tools, conversation history memory, and prompt construction.
 """
 
 import uuid
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Generator
 from datetime import datetime
 
 from app.ai.retrackai.retriever import retriever
+from app.ai.retrackai.query_rewriter import query_rewriter
+from app.ai.retrackai.intent_classifier import intent_classifier
+from app.ai.retrackai.memory_service import memory_service
+from app.ai.retrackai.llm_provider import llm_provider
 from app.ai.retrackai.tools import (
     get_tms_feed,
     get_tdms_feed,
@@ -31,7 +35,7 @@ from app.ai.retrackai.schemas import (
     KnowledgeSourceMetadata,
     ChatActionDTO,
 )
-from app.db.queries import save_retrackai_message
+from app.db.queries import save_retrackai_message, get_retrackai_messages
 
 
 class RETRACKAIService:
@@ -45,19 +49,42 @@ class RETRACKAIService:
         user_role = current_user.get("role", req.user_role or "CONTROLLER")
         selected_model = req.model or "gemini-1.5-pro"
 
+        # 1. Conversation Memory & Query Rewriting
+        conv_history = memory_service.get_trimmed_history(conv_id)
+        standalone_query = query_rewriter.rewrite(user_msg, conv_history)
+
+        # 2. Intent Detection
+        detected_intent = intent_classifier.classify(standalone_query)
+
         sources: List[KnowledgeSourceMetadata] = []
         data_type: Optional[str] = None
         data_obj: Optional[Dict[str, Any]] = None
         suggested_actions: List[ChatActionDTO] = []
         response_text = ""
 
-        # 1. Handle Explainer Mode Shortcuts
+        # 3. Handle Viva Mode / Explainer Mode / Summary Mode
         if req.explainer_mode and req.explainer_mode in EXPLAINER_MODES_PROMPTS:
             prompt_instruction = EXPLAINER_MODES_PROMPTS[req.explainer_mode]
             rag_docs = retriever.search(prompt_instruction, top_k=3)
             response_text = self._build_knowledge_response(prompt_instruction, rag_docs, sources)
 
-        # 2. Check for Specific Search / Live Data Queries (Tool & Data Search)
+        elif "viva" in msg_lower or "interview" in msg_lower or "exam" in msg_lower:
+            rag_docs = retriever.search("viva questions presentation answers", top_k=3)
+            response_text = (
+                f"### 🎓 RETRACK Viva & Presentation Prep Mode\n\n"
+                f"**Q1: What is RETRACK?**\n"
+                f"RETRACK is an AI decision-support platform for Indian Railways (SIH 2026 PS 26027) that unifies TMS, TDMS, SMMS, and COA feeds to schedule 5 km bundled maintenance blocks.\n"
+                f"**Key Point:** Multi-department conflict resolution.\n\n"
+                f"**Q2: Why use Google OR-Tools CP-SAT solver?**\n"
+                f"CP-SAT is a Constraint Programming MILP solver that calculates optimal non-overlapping block windows in seconds while preserving a **+15 minute safety buffer** around express trains.\n"
+                f"**Key Point:** Exact mathematical constraint satisfaction.\n\n"
+                f"**Q3: What is Digital PN?**\n"
+                f"A cryptographically generated 2-Factor Private Number code exchange between Controller and Station Master to verify block possession safety.\n"
+                f"**Key Point:** Eliminates verbal human error."
+            )
+            sources.append(KnowledgeSourceMetadata(source="RETRACK Project Documentation", document="viva_guide.md", section="Viva Questions"))
+
+        # 4. Handle Live Data Queries
         elif any(k in msg_lower for k in ["tdms", "defect", "cracks", "ultrasonic", "flaw", "trk-"]):
             data_type = "ASSET_RISKS"
             data_obj = get_tdms_feed()
@@ -85,9 +112,6 @@ class RETRACKAIService:
                 f"- **Required Block Type:** `TRAFFIC_BLOCK` / `JOINT_POSSESSION` (60 min duration).\n\n"
                 f"*Data Source: Live TMS Feed*"
             )
-            suggested_actions = [
-                ChatActionDTO(label="Run CP-SAT Planner", target_path="/planner", action_code="SHOW_BLOCKS"),
-            ]
 
         elif any(k in msg_lower for k in ["smms", "ohe", "electrical", "catenary", "signal", "interlocking"]):
             data_type = "MAINTENANCE_FEED"
@@ -113,9 +137,6 @@ class RETRACKAIService:
                 f"- **Express Priority:** Vande Bharat Express & Rajdhani Express operating on schedule.\n\n"
                 f"*Data Source: Live COA Train Feed*"
             )
-            suggested_actions = [
-                ChatActionDTO(label="CP-SAT Planner", target_path="/planner", action_code="SHOW_BLOCKS"),
-            ]
 
         elif any(k in msg_lower for k in ["cp-sat", "optimizer", "block plan", "possession", "bundling", "solver", "schedule"]):
             data_type = "BLOCK_PLAN"
@@ -132,41 +153,25 @@ class RETRACKAIService:
                 f"*Data Source: CP-SAT Optimization Solver Engine*"
             )
 
-        elif any(k in msg_lower for k in ["digital pn", "pn code", "private number", "handshake"]):
-            data_type = "PN_STATUS"
-            data_obj = get_digital_pn_status()
-            sources.append(KnowledgeSourceMetadata(source="RETRACK Project Documentation", document="digital_pn.md", section="2-Factor Handshake Protocol"))
-            response_text = (
-                f"### 🔑 Digital Private Number (PN) Search Results\n\n"
-                f"- **Block ID:** `{data_obj.get('block_id', 'BLK-2026-081')}`\n"
-                f"- **Cryptographic PN Code:** **{data_obj.get('pn_code', 'PN-847291')}**\n"
-                f"- **Generated By:** {data_obj.get('generated_by', 'Section Controller')}\n"
-                f"- **Handshake Status:** **{data_obj.get('status', 'VERIFIED')}**\n"
-                f"- **Verified By:** {data_obj.get('verified_by', 'Station Master (NDLS)')}\n\n"
-                f"*Data Source: Digital PN Handshake Audit Log*"
-            )
-
-        # 3. Flexible Project Search Engine (RAG over all 19+ knowledge files)
+        # 5. Domain RAG Search over Knowledge Documents
         else:
-            rag_docs = retriever.search(user_msg, top_k=3)
+            rag_docs = retriever.search(standalone_query, top_k=5)
             if rag_docs:
-                response_text = self._build_knowledge_response(user_msg, rag_docs, sources)
+                response_text = self._build_knowledge_response(standalone_query, rag_docs, sources)
             else:
-                # Fallback project overview search response
                 sources.append(KnowledgeSourceMetadata(source="RETRACK Project Documentation", document="project_overview.md", section="Executive Overview"))
                 response_text = (
                     f"### 🚆 RETRACK – RailSync-AI Project Search\n\n"
-                    f"I searched the RETRACK knowledge base for: **\"{user_msg}\"**\n\n"
                     f"RETRACK – RailSync-AI (SIH 2026 Problem Statement 26027) is an AI-powered railway maintenance planning platform.\n\n"
-                    f"**Key Architectural Highlights:**\n"
-                    f"- **Multi-Department Unified Feeds:** Ingests TMS (Civil), TDMS (Defects), SMMS (Electrical/S&T), and COA (Train schedules).\n"
-                    f"- **AI Predictive Risk Engine:** Scikit-Learn Random Forest Classifier assessing asset failure risks.\n"
-                    f"- **Mathematical Optimizer:** Google OR-Tools CP-SAT MILP solver bundling maintenance jobs within 5 km corridors while enforcing a mandatory **+15 minute safety buffer** around express trains.\n"
-                    f"- **Digital PN Handshake:** 2-Factor cryptographically generated Private Number protocol between Section Controller and Station Master.\n\n"
-                    f"You can search for any topic such as architecture, APIs, database tables, live trains, track defects, or safety rules!"
+                    f"**Key System Pipeline:**\n"
+                    f"- **Multi-Source Ingestion:** Connects TMS (Civil), TDMS (Defects), SMMS (Electrical/S&T), and COA (Train tracking).\n"
+                    f"- **Predictive Risk Scoring:** Random Forest ML scoring failure risks.\n"
+                    f"- **5 km Corridor Bundling:** Groups joint maintenance jobs within 5.0 km radius.\n"
+                    f"- **CP-SAT Solver:** Solves optimal possession blocks with a mandatory **+15 minute safety buffer**.\n"
+                    f"- **Digital PN Handshake:** 2-Factor cryptographically generated Private Number code."
                 )
 
-        # Persist conversation & messages to storage
+        # 6. Store Message to Storage
         try:
             save_retrackai_message(
                 conversation_id=conv_id,
@@ -193,6 +198,12 @@ class RETRACKAIService:
                 ChatActionDTO(label="High-Risk Assets", target_path="/assets", action_code="SHOW_RISK"),
             ],
         )
+
+    def process_query_stream(self, req: RETRACKAIQueryRequest, current_user: dict) -> Generator[str, None, None]:
+        res = self.process_query(req, current_user)
+        words = res.response.split(" ")
+        for w in words:
+            yield w + " "
 
     def _build_knowledge_response(
         self, query: str, rag_docs: List[Dict[str, Any]], sources: List[KnowledgeSourceMetadata]

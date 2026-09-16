@@ -992,3 +992,32 @@ def search_retrackai_conversations(user_id: str, query: str) -> List[Dict[str, A
         if any(q in m.get("content", "").lower() for m in c_msgs):
             matching_convs.append(c)
     return matching_convs
+
+
+def rename_retrackai_conversation(conversation_id: str, new_title: str) -> bool:
+    global _MOCK_CONVERSATIONS
+    for c in _MOCK_CONVERSATIONS:
+        if c["id"] == conversation_id:
+            c["title"] = new_title
+            c["updated_at"] = datetime.now(timezone.utc).isoformat()
+            break
+    if db_manager.supabase_client:
+        try:
+            db_manager.supabase_client.table("retrackai_conversations").update({"title": new_title}).eq("id", conversation_id).execute()
+        except Exception as e:
+            logger.error(f"Error renaming retrackai conversation in Supabase: {e}")
+    return True
+
+
+def delete_retrackai_conversation(conversation_id: str) -> bool:
+    global _MOCK_CONVERSATIONS, _MOCK_MESSAGES
+    _MOCK_CONVERSATIONS = [c for c in _MOCK_CONVERSATIONS if c["id"] != conversation_id]
+    _MOCK_MESSAGES = [m for m in _MOCK_MESSAGES if m.get("conversation_id") != conversation_id]
+    if db_manager.supabase_client:
+        try:
+            db_manager.supabase_client.table("retrackai_messages").delete().eq("conversation_id", conversation_id).execute()
+            db_manager.supabase_client.table("retrackai_conversations").delete().eq("id", conversation_id).execute()
+        except Exception as e:
+            logger.error(f"Error deleting retrackai conversation from Supabase: {e}")
+    return True
+

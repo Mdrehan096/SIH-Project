@@ -17,6 +17,10 @@ import {
   ThumbsDown,
   BookOpen,
   Sparkles,
+  GraduationCap,
+  Trash2,
+  Edit2,
+  RotateCcw,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -53,9 +57,10 @@ interface ConversationItem {
 
 const EXPLAINER_BUTTONS = [
   { label: '🏗️ Architecture', explainer_code: 'ARCHITECTURE', prompt: 'Explain the Model-View-Controller architecture of RETRACK' },
-  { label: '🔄 Workflow', explainer_code: 'WORKFLOW', prompt: 'Explain the complete end-to-end system workflow' },
+  { label: '🔄 System Workflow', explainer_code: 'WORKFLOW', prompt: 'Explain the complete end-to-end system workflow' },
   { label: '🤖 AI ML Risk', explainer_code: 'AI_ML', prompt: 'How does the Scikit-Learn Random Forest risk engine work?' },
   { label: '🧩 CP-SAT Solver', explainer_code: 'CP_SAT', prompt: 'Why do we use Google OR-Tools CP-SAT for block optimization?' },
+  { label: '🎓 Viva Guide', explainer_code: 'VIVA', prompt: 'Prepare me for RETRACK viva presentation questions' },
   { label: '🚆 Live Trains', explainer_code: 'WORKFLOW', prompt: 'Show live COA train operations and timetables' },
   { label: '⚠️ TDMS Defects', explainer_code: 'WORKFLOW', prompt: 'Show critical track defects from TDMS' },
   { label: '🔑 Digital PN', explainer_code: 'WORKFLOW', prompt: 'Explain the 2-factor Digital Private Number handshake protocol' },
@@ -65,12 +70,13 @@ const EXPLAINER_BUTTONS = [
 ];
 
 const QUICK_PROMPT_CHIPS = [
-  'What is RETRACK?',
-  'Show critical TDMS defects',
-  'Show live COA trains',
-  'Why use CP-SAT?',
-  'Explain 5 km bundling',
-  'Explain Digital PN protocol',
+  'Explain RETRACK',
+  'Explain the architecture',
+  'How does risk scoring work?',
+  'Explain CP-SAT',
+  'Explain the complete workflow',
+  'What is the future scope?',
+  'Prepare me for viva',
   'What are TMS, TDMS, SMMS feeds?',
   'How does +15 min safety buffer work?',
 ];
@@ -80,6 +86,7 @@ export const AiChatbot: React.FC = () => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
   const [showSidebar, setShowSidebar] = useState<boolean>(false);
+  const [vivaMode, setVivaMode] = useState<boolean>(false);
   const selectedModel = 'gemini-1.5-pro';
   const [inputMsg, setInputMsg] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
@@ -96,7 +103,7 @@ export const AiChatbot: React.FC = () => {
     {
       id: 'msg-init',
       sender: 'assistant',
-      text: `Hello ${user?.full_name || 'Officer'}. I am **RETRACKAI Search & Project Knowledge Assistant** for RETRACK – RailSync-AI (SIH 2026 Problem Statement 26027).\n\nSearch or ask me anything about the RETRACK project—architecture, system workflows, feeds (TMS, TDMS, SMMS, COA), CP-SAT optimizer, AI risk scoring, database schemas, APIs, or live operational data!`,
+      text: `Hello ${user?.full_name || 'Officer'}. I am **RETRACKAI**, the official project-specific LLM assistant for RETRACK – RailSync-AI (SIH 2026 Problem Statement 26027).\n\nAsk me anything about RETRACK architecture, system workflows, feeds (TMS, TDMS, SMMS, COA), CP-SAT optimizer, AI risk scoring, database schemas, APIs, viva questions, or live operational data!`,
       model_used: 'gemini-1.5-pro',
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       sources: [
@@ -143,11 +150,51 @@ export const AiChatbot: React.FC = () => {
       {
         id: `msg-${Date.now()}`,
         sender: 'assistant',
-        text: `New RETRACKAI conversation started. Search or ask anything about RETRACK project documentation or live operational feeds!`,
+        text: `New RETRACKAI conversation started. Ask me anything about RETRACK project documentation, system workflows, or live operational feeds!`,
         model_used: selectedModel,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       },
     ]);
+  };
+
+  const renameChat = async (convId: string) => {
+    const newTitle = prompt('Enter new conversation title:');
+    if (!newTitle) return;
+    try {
+      const token = localStorage.getItem('retrack_token') || 'demo-access-token';
+      await fetch(`http://localhost:8000/api/v1/chat/conversations/${convId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ title: newTitle }),
+      });
+      setConversations((prev) =>
+        prev.map((c) => (c.id === convId ? { ...c, title: newTitle } : c))
+      );
+    } catch {
+      // Fallback update
+      setConversations((prev) =>
+        prev.map((c) => (c.id === convId ? { ...c, title: newTitle } : c))
+      );
+    }
+  };
+
+  const deleteChat = async (convId: string) => {
+    if (!confirm('Are you sure you want to delete this chat conversation?')) return;
+    try {
+      const token = localStorage.getItem('retrack_token') || 'demo-access-token';
+      await fetch(`http://localhost:8000/api/v1/chat/conversations/${convId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setConversations((prev) => prev.filter((c) => c.id !== convId));
+      if (activeConvId === convId) startNewChat();
+    } catch {
+      setConversations((prev) => prev.filter((c) => c.id !== convId));
+      if (activeConvId === convId) startNewChat();
+    }
   };
 
   const handleCopy = (id: string, text: string) => {
@@ -228,13 +275,15 @@ export const AiChatbot: React.FC = () => {
       // Fallback
     }
 
-    // High-Performance Fallback Search Generator
+    // High-Performance Fallback Response Generator
     const lower = queryText.toLowerCase();
-    let replyText = `### 🚆 RETRACKAI Project Knowledge Search Results\n\n`;
+    let replyText = `### 🚆 RETRACKAI Project Knowledge Assistant\n\n`;
     let dataType = 'SYSTEM_INFO';
     let dataObj: any = null;
 
-    if (lower.includes('tdms') || lower.includes('defect') || lower.includes('crack')) {
+    if (vivaMode || lower.includes('viva') || lower.includes('exam')) {
+      replyText += `### 🎓 VIVA MENTOR ANSWER\n\n**Q: What is RETRACK?**\nRETRACK – RailSync-AI is an AI-powered railway maintenance decision support platform for Indian Railways that unifies multi-department feeds (TMS, TDMS, SMMS, COA) and uses Google OR-Tools CP-SAT to automatically schedule 5 km bundled maintenance blocks.\n\n**Key Technical Takeaways:**\n- Reduces corridor downtime by up to **40%**.\n- Enforces a mandatory **+15 minute safety buffer** around express trains.`;
+    } else if (lower.includes('tdms') || lower.includes('defect') || lower.includes('crack')) {
       dataType = 'ASSET_RISKS';
       replyText += `### ⚠️ Live TDMS Track Defect Summary\n\nRetrieved critical defect records from the Track Defect Management System (TDMS) feed.\n\n- **Primary Threat:** Rail cracks and ultrasonic flaw alerts at KM 124.5 (\`TRK-124\`).\n- **Recommended Action:** Schedule joint maintenance block possession during 02:00-03:00 AM window.`;
       dataObj = {
@@ -265,6 +314,14 @@ export const AiChatbot: React.FC = () => {
     setLoading(false);
   };
 
+  const regenerateResponse = () => {
+    if (messages.length < 2) return;
+    const lastUserMsg = [...messages].reverse().find((m) => m.sender === 'user');
+    if (lastUserMsg) {
+      handleSend(lastUserMsg.text);
+    }
+  };
+
   const filteredConversations = conversations.filter((c) =>
     c.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -281,8 +338,8 @@ export const AiChatbot: React.FC = () => {
             <Bot className="w-5 h-5 text-sky-400 animate-pulse" />
           </div>
           <div className="text-left">
-            <span className="text-xs font-bold block leading-none">RETRACKAI Search & AI</span>
-            <span className="text-[10px] text-sky-200/80 font-mono block mt-0.5">Project Search & AI Knowledge</span>
+            <span className="text-xs font-bold block leading-none">RETRACKAI Assistant</span>
+            <span className="text-[10px] text-sky-200/80 font-mono block mt-0.5">Project Knowledge & Live AI</span>
           </div>
         </button>
       )}
@@ -332,20 +389,40 @@ export const AiChatbot: React.FC = () => {
                     <div className="text-[10px] text-slate-500 py-3 text-center">No previous chats found.</div>
                   ) : (
                     filteredConversations.map((c) => (
-                      <button
+                      <div
                         key={c.id}
-                        onClick={() => {
-                          setActiveConvId(c.id);
-                          setShowSidebar(false);
-                        }}
-                        className={`w-full text-left px-2.5 py-2 rounded-lg text-[11px] transition-colors truncate block ${
+                        className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg text-[11px] transition-colors group ${
                           activeConvId === c.id
                             ? 'bg-sky-950 text-sky-300 font-bold border border-sky-800'
                             : 'text-slate-400 hover:bg-slate-900 hover:text-slate-200'
                         }`}
                       >
-                        {c.title}
-                      </button>
+                        <button
+                          onClick={() => {
+                            setActiveConvId(c.id);
+                            setShowSidebar(false);
+                          }}
+                          className="truncate flex-1 text-left"
+                        >
+                          {c.title}
+                        </button>
+                        <div className="hidden group-hover:flex items-center space-x-1 shrink-0 ml-1">
+                          <button
+                            onClick={() => renameChat(c.id)}
+                            className="p-1 text-slate-400 hover:text-sky-400"
+                            title="Rename Chat"
+                          >
+                            <Edit2 className="w-3 h-3" />
+                          </button>
+                          <button
+                            onClick={() => deleteChat(c.id)}
+                            className="p-1 text-slate-400 hover:text-rose-400"
+                            title="Delete Chat"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
+                      </div>
                     ))
                   )}
                 </div>
@@ -353,7 +430,7 @@ export const AiChatbot: React.FC = () => {
 
               <div className="text-[10px] font-mono text-slate-500 border-t border-slate-800 pt-2 flex items-center justify-between">
                 <span>RETRACK Knowledge Base</span>
-                <span className="text-emerald-400 font-bold">Project Search Active</span>
+                <span className="text-emerald-400 font-bold">24 Docs Active</span>
               </div>
             </div>
           )}
@@ -376,21 +453,34 @@ export const AiChatbot: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="font-bold text-slate-100 text-xs flex items-center space-x-2">
-                    <span>RETRACKAI Search</span>
+                    <span>RETRACKAI</span>
                     <span className="px-2 py-0.2 rounded-full bg-emerald-950 border border-emerald-800 text-emerald-400 text-[9px] font-mono font-bold flex items-center space-x-1">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                      <span>SEARCH ENGINE ONLINE</span>
+                      <span>ONLINE</span>
                     </span>
                   </h3>
-                  <p className="text-[10px] text-slate-400 font-mono">Full Project Knowledge & Live Data Search</p>
+                  <p className="text-[10px] text-slate-400 font-mono">Project-Trained Knowledge Engine</p>
                 </div>
               </div>
 
-              {/* Controls: Project Search Indicator + View Buttons */}
+              {/* Controls: Viva Mode Toggle + View Buttons */}
               <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => setVivaMode(!vivaMode)}
+                  className={`px-2.5 py-1 rounded-lg border font-mono text-[10px] font-bold flex items-center space-x-1 transition-all cursor-pointer ${
+                    vivaMode
+                      ? 'bg-amber-500 text-slate-950 border-amber-400 shadow'
+                      : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-amber-400'
+                  }`}
+                  title="Toggle Viva / Presentation Mode"
+                >
+                  <GraduationCap className="w-3.5 h-3.5" />
+                  <span>{vivaMode ? 'VIVA MODE ON' : 'Viva Mode'}</span>
+                </button>
+
                 <div className="hidden sm:flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-sky-950/80 border border-sky-800/80 text-sky-300 font-mono text-[10px] font-bold">
                   <Sparkles className="w-3 h-3 text-sky-400 animate-pulse" />
-                  <span>Project Search Active</span>
+                  <span>RETRACKAI v2.0</span>
                 </div>
 
                 <button
@@ -443,7 +533,7 @@ export const AiChatbot: React.FC = () => {
                     }`}
                   >
                     <div className="flex items-center justify-between text-[10px] opacity-75 font-mono mb-1">
-                      <span>{m.sender === 'user' ? 'You' : 'RETRACKAI Search'}</span>
+                      <span>{m.sender === 'user' ? 'You' : 'RETRACKAI Assistant'}</span>
                       <span>{m.timestamp}</span>
                     </div>
 
@@ -495,7 +585,7 @@ export const AiChatbot: React.FC = () => {
                       </div>
                     )}
 
-                    {/* Assistant Footer: Copy & Helpful Feedback */}
+                    {/* Assistant Footer: Copy, Regenerate & Feedback */}
                     {m.sender === 'assistant' && (
                       <div className="flex items-center justify-between pt-2.5 text-[10px] text-slate-500 border-t border-slate-800/60 font-mono">
                         <div className="flex items-center space-x-2">
@@ -514,13 +604,23 @@ export const AiChatbot: React.FC = () => {
                           </button>
                         </div>
 
-                        <button
-                          onClick={() => handleCopy(m.id, m.text)}
-                          className="flex items-center space-x-1 hover:text-slate-200 transition-colors"
-                        >
-                          {copiedId === m.id ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
-                          <span>{copiedId === m.id ? 'Copied' : 'Copy'}</span>
-                        </button>
+                        <div className="flex items-center space-x-2">
+                          <button
+                            onClick={regenerateResponse}
+                            className="flex items-center space-x-1 hover:text-sky-400 transition-colors"
+                            title="Regenerate Response"
+                          >
+                            <RotateCcw className="w-3 h-3" />
+                            <span>Retry</span>
+                          </button>
+                          <button
+                            onClick={() => handleCopy(m.id, m.text)}
+                            className="flex items-center space-x-1 hover:text-slate-200 transition-colors"
+                          >
+                            {copiedId === m.id ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                            <span>{copiedId === m.id ? 'Copied' : 'Copy'}</span>
+                          </button>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -560,7 +660,7 @@ export const AiChatbot: React.FC = () => {
               >
                 <input
                   type="text"
-                  placeholder="Search or ask anything about RETRACK project..."
+                  placeholder={vivaMode ? 'Ask a Viva / Presentation Question...' : 'Ask RETRACKAI...'}
                   value={inputMsg}
                   onChange={(e) => setInputMsg(e.target.value)}
                   className="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-sky-500 placeholder-slate-500"
@@ -579,7 +679,7 @@ export const AiChatbot: React.FC = () => {
                   <ShieldCheck className="w-3 h-3 text-emerald-400" />
                   <span>Authorized Role: <strong>{user?.role || 'CONTROLLER'}</strong></span>
                 </span>
-                <span>Search Engine: <strong>RETRACK Knowledge Base & Live Feeds</strong></span>
+                <span>Grounding: <strong>RETRACK Knowledge Base & Live Feeds</strong></span>
               </div>
             </div>
           </div>
