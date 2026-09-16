@@ -158,3 +158,22 @@ def test_analytics_dashboard_endpoint():
     data = response.json()
     assert data["active_trains"] >= 1
     assert "CIVIL" in data["department_distribution"]
+
+
+def test_chat_endpoints_demo_auth():
+    # Test GET /chat/conversations with demo token header
+    conv_res = client.get(
+        "/api/v1/chat/conversations",
+        headers={"Authorization": "Bearer demo-access-token"}
+    )
+    assert conv_res.status_code == 200
+
+    # Test POST /chat/query with demo token header
+    query_res = client.post(
+        "/api/v1/chat/query",
+        json={"message": "What is RETRACK?", "conversation_id": "conv-demo-123"},
+        headers={"Authorization": "Bearer demo-access-token"}
+    )
+    assert query_res.status_code == 200
+    assert "RETRACK" in query_res.json()["response"]
+
