@@ -56,7 +56,6 @@ interface ConversationItem {
 }
 
 const EXPLAINER_BUTTONS = [
-  { label: '🏗️ Architecture', explainer_code: 'ARCHITECTURE', prompt: 'Explain the Model-View-Controller architecture of RETRACK' },
   { label: '🔄 System Workflow', explainer_code: 'WORKFLOW', prompt: 'Explain the complete end-to-end system workflow' },
   { label: '🤖 AI ML Risk', explainer_code: 'AI_ML', prompt: 'How does the Scikit-Learn Random Forest risk engine work?' },
   { label: '🧩 CP-SAT Solver', explainer_code: 'CP_SAT', prompt: 'Why do we use Google OR-Tools CP-SAT for block optimization?' },
@@ -71,7 +70,6 @@ const EXPLAINER_BUTTONS = [
 
 const QUICK_PROMPT_CHIPS = [
   'Explain RETRACK',
-  'Explain the architecture',
   'How does risk scoring work?',
   'Explain CP-SAT',
   'Explain the complete workflow',
@@ -103,7 +101,7 @@ export const AiChatbot: React.FC = () => {
     {
       id: 'msg-init',
       sender: 'assistant',
-      text: `Hello ${user?.full_name || 'Officer'}. I am **RETRACKAI**, the official project-specific LLM assistant for RETRACK – RailSync-AI (SIH 2026 Problem Statement 26027).\n\nAsk me anything about RETRACK architecture, system workflows, feeds (TMS, TDMS, SMMS, COA), CP-SAT optimizer, AI risk scoring, database schemas, APIs, viva questions, or live operational data!`,
+      text: `Hello ${user?.full_name || 'Officer'}. I am **RETRACKAI**, the official project-specific LLM assistant for RETRACK – RailSync-AI (SIH 2026 Problem Statement 26027).\n\nAsk me anything about RETRACK system workflows, feeds (TMS, TDMS, SMMS, COA), CP-SAT optimizer, AI risk scoring, database schemas, APIs, viva questions, or live operational data!`,
       model_used: 'gemini-1.5-pro',
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       sources: [
