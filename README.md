@@ -15,6 +15,63 @@ By bundling geographically proximate maintenance tasks across departments within
 
 ---
 
+## 🤖 RETRACKAI — Project-Specific AI Knowledge Assistant
+
+RETRACK incorporates **RETRACKAI**, a dedicated ChatGPT-style project knowledge assistant engineered specifically for RETRACK – RailSync-AI.
+
+```
+                         USER
+                           │
+                           ▼
+                    ┌─────────────┐
+                    │  RETRACKAI  │
+                    │ Chat UI     │
+                    └──────┬──────┘
+                           │
+                           ▼
+                 ┌──────────────────┐
+                 │ AI Orchestrator  │
+                 │ (service.py)     │
+                 └────────┬─────────┘
+                          │
+          ┌───────────────┼────────────────┐
+          │               │                │
+          ▼               ▼                ▼
+   Project Knowledge   Live Data       Chat History
+   (retriever.py)      Tools           Retrieval
+   (20 Markdown Docs)  (tools.py)      (queries.py)
+          │               │                │
+          │        ┌──────┼───────┐        │
+          │        │      │       │        │
+          │       TMS    TDMS    SMMS      │
+          │                       │        │
+          │                      COA       │
+          │                       │        │
+          └───────────────┬───────┘        │
+                          │                │
+                          ▼                │
+                    Context Builder ◄──────┘
+                          │
+                          ▼
+                    Prompt Builder & Guardrails
+                          │
+                          ▼
+                     LLM Provider
+                          │
+                          ▼
+                     RETRACKAI Response
+```
+
+### Key RETRACKAI Capabilities
+1. **RAG Knowledge Base (20 Modular Markdown Knowledge Files):** Grounded in structured project documentation covering Problem Statement 26027, MVC Architecture, System Workflow, TMS/TDMS/SMMS/COA feeds, CP-SAT MILP solver math, Scikit-Learn Random Forest risk weights, Digital PN 2-factor handshake, database schema, REST APIs, future scope, and limitations.
+2. **Safe Application Data Tools (`tools.py`):** Fetches live operational data from TMS, TDMS, SMMS, COA, risk model, and CP-SAT solver without executing arbitrary SQL.
+3. **🎓 Viva & Presentation Mode:** Generates short, presentation-ready Q&A answers for hackathon judges and viva mentors.
+4. **Explainer Mode Buttons:** Instant 1-click explanation prompts for `Explain Project`, `Architecture`, `Workflow`, `AI/ML`, `CP-SAT`, `Database`, `APIs`, `Security`, `Future Scope`, and `Viva Questions`.
+5. **Chat History & Search:** Persists chat sessions and message streams in Supabase PostgreSQL (`retrackai_conversations`, `retrackai_messages`, `retrackai_feedback`) with sidebar search.
+6. **Strict Hallucination Control:** Refuses non-project queries and clearly distinguishes prototype/demo data from production data.
+
+---
+
 ## 🏗 Architecture Pattern: Model-View-Controller (MVC)
 
 RETRACK – RailSync-AI enforces a clean, modular **Model-View-Controller (MVC)** architectural pattern across both backend services and frontend user interfaces:
@@ -27,7 +84,7 @@ RETRACK – RailSync-AI enforces a clean, modular **Model-View-Controller (MVC)*
                                        v
                +-----------------------------------------------+
                |                 VIEW LAYER                    |
-               |  - React Pages (BlockPlanner, DigitalPn, etc) |
+               |  - React Pages (BlockPlanner, DigitalPn)   |
                |  - FastAPI API Routes (REST Controllers)      |
                +-----------------------------------------------+
                                  |            ^
@@ -51,24 +108,6 @@ RETRACK – RailSync-AI enforces a clean, modular **Model-View-Controller (MVC)*
                +-----------------------------------------------+
 ```
 
-### MVC Layer Responsibilities
-
-1. **Model Layer (`backend/app/models/` & `backend/app/schemas/`)**:
-   - Encapsulates domain entities (`MaintenanceRequestModel`, `TrainModel`, `BlockPossessionModel`, `DigitalPNModel`, `NotificationModel`).
-   - Validates incoming and outgoing data structures using Pydantic DTOs.
-   - Handles SQL persistence and live table synchronizations with Supabase PostgreSQL.
-
-2. **Controller Layer (`backend/app/controllers/` & `backend/app/services/`)**:
-   - Contains business logic, optimization math, and predictive risk scoring.
-   - `MaintenanceController`: Manages maintenance request workflows and status persistence (`PENDING` -> `COMPLETED`).
-   - `OptimizerController`: Orchestrates Google OR-Tools CP-SAT bundling and schedule constraint solving.
-   - `RiskController`: Evaluates Scikit-Learn Random Forest failure probability and risk feature weights.
-   - `PNController`: Manages cryptographic Private Number generation and 2-step Station Master verification.
-
-3. **View Layer (`frontend/src/pages/` & `backend/app/api/routes/`)**:
-   - **Backend API Views**: FastAPI route endpoints that receive requests, invoke Controller methods, and return serialized JSON views.
-   - **Frontend UI Views**: Interactive React pages (Block Planner, Analytics Dashboard, Digital PN Exchange, Notification Center) with Light/Dark theme rendering.
-
 ---
 
 ## 🛠 Technology Stack
@@ -91,6 +130,7 @@ RETRACK – RailSync-AI enforces a clean, modular **Model-View-Controller (MVC)*
 - **Web Server:** Uvicorn (Production ASGI Server)
 
 ### AI, Machine Learning & Mathematical Optimization
+- **Knowledge Assistant:** RETRACKAI RAG Engine & Data Retrieval Tools
 - **Optimization Solver:** Google OR-Tools v9.9 (CP-SAT Constraint Programming Solver)
 - **Predictive Risk Model:** Scikit-Learn v1.4 (Random Forest Classifier & Feature Importance Evaluator)
 - **Data Processing:** Pandas v2.2, NumPy v1.26, Joblib v1.3
@@ -98,7 +138,7 @@ RETRACK – RailSync-AI enforces a clean, modular **Model-View-Controller (MVC)*
 ### Database & Live Cloud Persistence
 - **Engine:** Supabase PostgreSQL 15+ (Cloud Relational Database)
 - **Driver:** `supabase-py` v2.4, Direct PostgreSQL Connection Pooler
-- **Schema:** 17 Relational Tables, `uuid-ossp` Extensions, PL/pgSQL Triggers for `updated_at`, Spatial & Status B-Tree Indexes.
+- **Schema:** 20 Relational Tables, `uuid-ossp` Extensions, PL/pgSQL Triggers for `updated_at`, Spatial & Status B-Tree Indexes.
 
 ---
 
@@ -146,59 +186,31 @@ flowchart TD
 
 ---
 
-## 🚀 Key Feature Modules
-
-### 1. CP-SAT Block Optimizer & Custom Time Slot Selection ([BlockPlannerPage.tsx](file:///d:/SIH_PROJECT/frontend/src/pages/BlockPlannerPage.tsx))
-- **Automated Mathematical Scheduling**: Generates conflict-free block possession windows based on section constraints.
-- **Custom Time-Slot & Duration Control**: Section Controllers can input custom start/end times (`customStartTime`, `customEndTime`) or duration windows to evaluate instant schedule feasibility before approving.
-- **Joint Department Possession**: Displays bundled Civil, Electrical, and S&T tasks sharing the same track possession window.
-
-### 2. AI Predictive Risk Simulator & Calculator ([AnalyticsPage.tsx](file:///d:/SIH_PROJECT/frontend/src/pages/AnalyticsPage.tsx))
-- **Interactive Asset Risk Calculator**: Evaluate failure probability (0.0 - 1.0) and Asset Health Risk Score (0 - 100) across target railway assets (`TRK-124`, `OHE-124`, `SIG-125`).
-- **Random Forest Feature Importance Visualizer**: Displays ML decision weights for Defect Severity (35%), Structural Failures (25%), Defect Frequency (20%), Inspection Score (12%), and Asset Age (8%).
-- **Department-Wise Maintenance Share**: Visual charts depicting task distribution across Civil, Electrical, and Signal & Telecom departments.
-
-### 3. Digital Private Number (PN) Exchange Protocol ([DigitalPnPage.tsx](file:///d:/SIH_PROJECT/frontend/src/pages/DigitalPnPage.tsx))
-- **Instant Automatic PN Generation**: Generates cryptographic PN codes (`PN-847291`) on click or load with single-click copy to clipboard.
-- **2-Factor Handshake Verification**: Station Masters select their station code (`NDLS`, `AGC`, `GZB`, `TKD`, `NZM`) and complete authorization, activating `POSSESSION AUTHORIZED & LIVE ACTIVE` status.
-- **Audit Log Table**: Full log history of past PN handshakes.
-
-### 4. Operational Notification Center ([NotificationsPage.tsx](file:///d:/SIH_PROJECT/frontend/src/pages/NotificationsPage.tsx))
-- **Filter Chips**: Filter system alerts by `All Alerts`, `Unread`, `Critical Risk`, `Warnings`, `Advisories`, and `Resolved`.
-- **Broadcast Operational Alerts**: Issue custom alerts with title, severity level, department tag, category code, and description.
-- **Quick Feed Actions**: Toggle read/unread, delete notification, mark all read, or clear feed.
-
-### 5. Department Status Management ([MaintenanceRequestsPage.tsx](file:///d:/SIH_PROJECT/frontend/src/pages/MaintenanceRequestsPage.tsx))
-- **Live Status Persistence**: Department officers can update task states (`PENDING`, `IN_PROGRESS`, `COMPLETED`, `REJECTED`) which write directly to Supabase PostgreSQL in real time.
-
----
-
-## 📂 Repository Structure (MVC Organized)
+## 📂 Repository Structure
 
 ```
 SIH_PROJECT/
 ├── database/
-│   ├── schema.sql              # Supabase PostgreSQL 15+ DDL (17 Relational Tables)
+│   ├── schema.sql              # Supabase PostgreSQL 15+ DDL (20 Relational Tables)
 │   └── seed.sql                # Northern Railway NDLS-AGC corridor operational demo data
 ├── backend/
 │   ├── app/
-│   │   ├── api/routes/         # VIEW LAYER: FastAPI endpoints (JSON Views & Routes)
-│   │   ├── controllers/        # CONTROLLER LAYER: Request Orchestrators (Maintenance, Optimizer, Risk, PN)
+│   │   ├── ai/retrackai/       # RETRACKAI Assistant (Service, Knowledge, Retriever, Tools, Prompts)
+│   │   ├── api/routes/         # VIEW LAYER: FastAPI endpoints (Chat, Maintenance, Trains, Optimizer, PN)
+│   │   ├── controllers/        # CONTROLLER LAYER: Request Orchestrators
 │   │   ├── core/               # Configuration settings, CORS, JWT security
 │   │   ├── db/                 # Database Connection Manager & Supabase queries
-│   │   ├── models/             # MODEL LAYER: Domain Data Entities (Maintenance, Train, PN, Notification)
+│   │   ├── models/             # MODEL LAYER: Domain Data Entities
 │   │   ├── schemas/            # MODEL LAYER: Pydantic Request/Response DTO Schemas
 │   │   ├── services/           # BUSINESS LAYER: OR-Tools solver & ML model engines
 │   │   └── main.py             # FastAPI Application Entry Point
-│   ├── ai/                     # Scikit-Learn ML Risk Model & Feature Engineering
 │   ├── requirements.txt        # Python dependencies
 │   └── .env                    # Backend environment variables
 ├── frontend/
 │   ├── src/
-│   │   ├── components/         # VIEW LAYER: Reusable UI Components (Header, Sidebar, Search, Widgets)
+│   │   ├── components/         # VIEW LAYER: AiChatbot, Header, Sidebar, GlobalSearch
 │   │   ├── context/            # STATE LAYER: AuthContext, ThemeContext, RealtimeContext
-│   │   ├── lib/                # Supabase JS Client helper
-│   │   ├── pages/              # VIEW LAYER: React Pages (Dashboard, BlockPlanner, DigitalPn, Analytics, Notifications)
+│   │   ├── pages/              # VIEW LAYER: React Pages (BlockPlanner, DigitalPn, Analytics)
 │   │   ├── services/           # API CLIENT LAYER: Axios client & backend endpoints
 │   │   └── App.tsx             # Main App Router & Layout
 │   ├── package.json            # Frontend NPM dependencies
@@ -240,7 +252,7 @@ python -m uvicorn app.main:app --reload --port 8000
 ```
 - **API Base URL:** `http://localhost:8000`
 - **Interactive OpenAPI Docs:** `http://localhost:8000/docs`
-- **Health Check Endpoint:** `http://localhost:8000/api/v1/health`
+- **RETRACKAI Endpoint:** `http://localhost:8000/api/v1/chat/query`
 
 ### 4. Frontend Setup & Execution
 
@@ -279,4 +291,4 @@ d:\SIH_PROJECT\backend\venv\Scripts\pytest.exe d:\SIH_PROJECT\tests
 ```
 - **Test Result:** `32 passed` (100% pass rate).
 - **TypeScript Verification:** `npx tsc --noEmit` passed with **0 errors**.
-- **Production Build:** `npm run build` compiled in **8.57s**.
+- **Production Build:** `npm run build` compiled in **8.49s**.

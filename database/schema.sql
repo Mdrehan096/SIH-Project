@@ -291,6 +291,107 @@ CREATE TABLE IF NOT EXISTS audit_logs (
 );
 
 -- ====================================================================
+-- 18. TMS FEED MESSAGES TABLE
+-- ====================================================================
+CREATE TABLE IF NOT EXISTS tms_feed_messages (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    message_id VARCHAR(100) NOT NULL UNIQUE,
+    source VARCHAR(50) DEFAULT 'TMS',
+    timestamp TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    section_id VARCHAR(100) NOT NULL DEFAULT 'SEC-NDLS-AGC-01',
+    track_id VARCHAR(100) NOT NULL,
+    location_km NUMERIC(8, 2) NOT NULL,
+    maintenance_type VARCHAR(150) NOT NULL,
+    priority VARCHAR(20) NOT NULL CHECK (priority IN ('LOW', 'MEDIUM', 'HIGH', 'CRITICAL')),
+    status VARCHAR(30) NOT NULL DEFAULT 'NEW' CHECK (status IN ('NEW', 'PENDING', 'PROCESSED', 'COMPLETED', 'REJECTED')),
+    raw_payload JSONB DEFAULT '{}',
+    normalized_payload JSONB DEFAULT '{}',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ====================================================================
+-- 19. TDMS FEED MESSAGES TABLE (Track Defects)
+-- ====================================================================
+CREATE TABLE IF NOT EXISTS tdms_feed_messages (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    message_id VARCHAR(100) NOT NULL UNIQUE,
+    source VARCHAR(50) DEFAULT 'TDMS',
+    timestamp TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    track_id VARCHAR(100) NOT NULL,
+    location_km NUMERIC(8, 2) NOT NULL,
+    defect_type VARCHAR(150) NOT NULL,
+    severity VARCHAR(20) NOT NULL CHECK (severity IN ('LOW', 'MEDIUM', 'HIGH', 'CRITICAL')),
+    risk_score NUMERIC(5, 2) DEFAULT 50.00 CHECK (risk_score BETWEEN 0 AND 100),
+    status VARCHAR(30) NOT NULL DEFAULT 'OPEN' CHECK (status IN ('OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED')),
+    raw_payload JSONB DEFAULT '{}',
+    normalized_payload JSONB DEFAULT '{}',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ====================================================================
+-- 20. SMMS FEED MESSAGES TABLE (OHE & S&T Maintenance)
+-- ====================================================================
+CREATE TABLE IF NOT EXISTS smms_feed_messages (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    message_id VARCHAR(100) NOT NULL UNIQUE,
+    source VARCHAR(50) DEFAULT 'SMMS',
+    timestamp TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    department VARCHAR(50) NOT NULL CHECK (department IN ('OHE', 'SIGNAL', 'TELECOM', 'ELECTRICAL', 'SIGNAL_TELECOM')),
+    asset_id VARCHAR(100) NOT NULL,
+    location_km NUMERIC(8, 2) NOT NULL,
+    issue_type VARCHAR(150) NOT NULL,
+    severity VARCHAR(20) NOT NULL CHECK (severity IN ('LOW', 'MEDIUM', 'HIGH', 'CRITICAL')),
+    maintenance_required BOOLEAN DEFAULT TRUE,
+    status VARCHAR(30) NOT NULL DEFAULT 'NEW' CHECK (status IN ('NEW', 'PENDING', 'PROCESSED', 'COMPLETED', 'REJECTED')),
+    raw_payload JSONB DEFAULT '{}',
+    normalized_payload JSONB DEFAULT '{}',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ====================================================================
+-- 21. COA TRAINS & ROUTES TABLES (Control Office Application)
+-- ====================================================================
+CREATE TABLE IF NOT EXISTS coa_routes (
+    id VARCHAR(100) PRIMARY KEY,
+    route_code VARCHAR(50) NOT NULL UNIQUE,
+    name VARCHAR(255) NOT NULL,
+    origin_station VARCHAR(50) NOT NULL,
+    destination_station VARCHAR(50) NOT NULL,
+    total_distance_km NUMERIC(8, 2) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS coa_route_stations (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    route_id VARCHAR(100) NOT NULL REFERENCES coa_routes(id) ON DELETE CASCADE,
+    station_code VARCHAR(50) NOT NULL,
+    station_name VARCHAR(255) NOT NULL,
+    sequence_order INT NOT NULL,
+    distance_from_origin_km NUMERIC(8, 2) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS coa_trains (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    train_id VARCHAR(50) NOT NULL UNIQUE,
+    train_number VARCHAR(50) NOT NULL UNIQUE,
+    train_name VARCHAR(255) NOT NULL,
+    origin VARCHAR(50) NOT NULL,
+    destination VARCHAR(50) NOT NULL,
+    current_station VARCHAR(50) NOT NULL,
+    next_station VARCHAR(50) NOT NULL,
+    status VARCHAR(30) NOT NULL DEFAULT 'RUNNING' CHECK (status IN ('SCHEDULED', 'RUNNING', 'DELAYED', 'ARRIVED', 'CANCELLED')),
+    scheduled_departure VARCHAR(20),
+    estimated_arrival VARCHAR(20),
+    delay_minutes INT DEFAULT 0,
+    route_id VARCHAR(100) REFERENCES coa_routes(id),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ====================================================================
 -- INDEXES FOR PERFORMANCE OPTIMIZATION
 -- ====================================================================
 CREATE INDEX IF NOT EXISTS idx_maint_req_location ON maintenance_requests(section_id, location_km, status);
@@ -301,22 +402,41 @@ CREATE INDEX IF NOT EXISTS idx_blocks_spatial_time ON maintenance_blocks(section
 CREATE INDEX IF NOT EXISTS idx_blocks_status ON maintenance_blocks(status);
 CREATE INDEX IF NOT EXISTS idx_assets_location ON assets(section_id, location_km);
 CREATE INDEX IF NOT EXISTS idx_audit_created ON audit_logs(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_tms_feed_status ON tms_feed_messages(status, priority, timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_tdms_feed_status ON tdms_feed_messages(status, severity, timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_smms_feed_dept ON smms_feed_messages(department, status, timestamp DESC);
+-- ====================================================================
+-- RETRACKAI CHAT CONVERSATIONS & MESSAGES TABLES
+-- ====================================================================
+CREATE TABLE IF NOT EXISTS retrackai_conversations (
+    id VARCHAR(100) PRIMARY KEY,
+    user_id VARCHAR(100) NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
 
--- ====================================================================
--- APPLY UPDATED_AT TRIGGERS
--- ====================================================================
-DO $$
-DECLARE
-    tbl text;
-BEGIN
-    FOR tbl IN 
-        SELECT table_name 
-        FROM information_schema.tables 
-        WHERE table_schema='public' 
-          AND table_type='BASE TABLE'
-          AND table_name IN ('departments', 'users', 'railway_sections', 'assets', 'maintenance_requests', 'maintenance_tasks', 'trains', 'train_paths', 'constraints', 'maintenance_blocks')
-    LOOP
-        EXECUTE format('DROP TRIGGER IF EXISTS update_%I_modtime ON %I;', tbl, tbl);
-        EXECUTE format('CREATE TRIGGER update_%I_modtime BEFORE UPDATE ON %I FOR EACH ROW EXECUTE PROCEDURE update_timestamp_column();', tbl, tbl);
-    END LOOP;
-END $$;
+CREATE TABLE IF NOT EXISTS retrackai_messages (
+    id VARCHAR(100) PRIMARY KEY,
+    conversation_id VARCHAR(100) NOT NULL REFERENCES retrackai_conversations(id) ON DELETE CASCADE,
+    role VARCHAR(20) NOT NULL CHECK (role IN ('USER', 'ASSISTANT')),
+    content TEXT NOT NULL,
+    data_type VARCHAR(50),
+    data JSONB,
+    sources JSONB,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS retrackai_feedback (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    message_id VARCHAR(100) NOT NULL,
+    user_id VARCHAR(100) NOT NULL,
+    is_helpful BOOLEAN NOT NULL,
+    feedback_text TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_retrackai_conv_user ON retrackai_conversations(user_id, updated_at DESC);
+CREATE INDEX IF NOT EXISTS idx_retrackai_msg_conv ON retrackai_messages(conversation_id, created_at ASC);
+
+

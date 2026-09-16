@@ -5,7 +5,7 @@ Orchestrates CP-SAT constraint optimization and multi-department corridor bundli
 
 from typing import Dict, Any
 from app.services.optimization_service import optimization_service
-from app.services.bundling_service import bundling_service
+from app.services.bundling_service import bundling_engine
 
 
 class OptimizerController:
@@ -15,7 +15,7 @@ class OptimizerController:
         return optimization_service.solve(request_payload)
 
     def bundle_corridor_requests(self, section_id: str, distance_km: float = 5.0) -> Dict[str, Any]:
-        return bundling_service.bundle_by_corridor(section_id=section_id, max_distance_km=distance_km)
+        return bundling_engine.generate_spatial_bundles(section_id=section_id, max_dist_km=distance_km)
 
 
 optimizer_controller = OptimizerController()

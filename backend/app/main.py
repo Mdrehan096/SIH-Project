@@ -11,6 +11,10 @@ from app.core.constants import APP_TITLE, APP_VERSION, SIH_PROBLEM_STATEMENT_ID
 from app.api.routes import (
     auth,
     maintenance,
+    tms,
+    tdms,
+    smms,
+    coa,
     trains,
     assets,
     risk,
@@ -90,6 +94,10 @@ async def global_exception_handler(request: Request, exc: Exception):
 # Include API Routers under /api/v1
 api_v1_prefix = settings.API_V1_STR
 app.include_router(auth.router, prefix=api_v1_prefix)
+app.include_router(tms.router, prefix=api_v1_prefix)
+app.include_router(tdms.router, prefix=api_v1_prefix)
+app.include_router(smms.router, prefix=api_v1_prefix)
+app.include_router(coa.router, prefix=api_v1_prefix)
 app.include_router(maintenance.router, prefix=api_v1_prefix)
 app.include_router(trains.router, prefix=api_v1_prefix)
 app.include_router(assets.router, prefix=api_v1_prefix)
@@ -110,6 +118,7 @@ app.include_router(reports.router, prefix=api_v1_prefix)
 app.include_router(workflow.router, prefix=api_v1_prefix)
 app.include_router(admin.router, prefix=api_v1_prefix)
 app.include_router(appearance.router, prefix=api_v1_prefix)
+
 
 
 @app.get("/", tags=["Health"])
