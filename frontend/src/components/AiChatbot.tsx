@@ -85,9 +85,6 @@ export const AiChatbot: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  // Search filter state for live top bar project search
-  const [topSearchText, setTopSearchText] = useState<string>('');
-
   // Conversation history state
   const [activeConvId, setActiveConvId] = useState<string>(`conv-${Date.now().toString().slice(-6)}`);
   const [conversations, setConversations] = useState<ConversationItem[]>([]);
@@ -410,35 +407,6 @@ export const AiChatbot: React.FC = () => {
                   <X className="w-4 h-4" />
                 </button>
               </div>
-            </div>
-
-            {/* Quick Interactive Search Bar Header */}
-            <div className="bg-slate-950 px-3 py-2 border-b border-slate-800/80">
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  if (topSearchText.trim()) {
-                    handleSend(topSearchText);
-                    setTopSearchText('');
-                  }
-                }}
-                className="relative"
-              >
-                <Search className="w-3.5 h-3.5 text-sky-400 absolute left-3 top-2.5" />
-                <input
-                  type="text"
-                  placeholder="Search anything about RETRACK project (e.g. CP-SAT, defects, TMS, trains, safety)..."
-                  value={topSearchText}
-                  onChange={(e) => setTopSearchText(e.target.value)}
-                  className="w-full bg-slate-900 border border-sky-900/60 rounded-xl pl-8 pr-16 py-1.5 text-xs text-slate-100 placeholder-slate-400 focus:outline-none focus:border-sky-500 font-mono"
-                />
-                <button
-                  type="submit"
-                  className="absolute right-1 top-1 bottom-1 px-2.5 bg-sky-600 hover:bg-sky-500 text-slate-950 font-bold rounded-lg text-[10px] font-mono cursor-pointer transition-colors"
-                >
-                  Search
-                </button>
-              </form>
             </div>
 
             {/* Explainer Mode Quick Actions Header Bar */}
