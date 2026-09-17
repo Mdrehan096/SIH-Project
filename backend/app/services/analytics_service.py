@@ -1,6 +1,6 @@
 import logging
 from typing import Dict, Any
-from app.db.queries import get_all_maintenance_requests, get_all_trains
+from app.db.queries import get_all_maintenance_requests, get_all_trains, get_all_assets
 
 logger = logging.getLogger("retrack.analytics_service")
 
@@ -14,6 +14,7 @@ class AnalyticsService:
     def get_dashboard_analytics(self) -> Dict[str, Any]:
         reqs = get_all_maintenance_requests()
         trains = get_all_trains()
+        assets = get_all_assets()
 
         civil_count = sum(1 for r in reqs if r.get("department_id") == "CIVIL" or r.get("department") == "CIVIL")
         elec_count = sum(1 for r in reqs if r.get("department_id") == "ELECTRICAL" or r.get("department") == "ELECTRICAL")
@@ -26,6 +27,12 @@ class AnalyticsService:
 
         delayed_trains_count = sum(1 for t in trains if t.get("status") == "DELAYED" or t.get("delay_minutes", 0) > 0)
 
+        if assets:
+            total_health = sum(float(a.get("health_score", 75.0)) for a in assets)
+            asset_availability_index = round(total_health / len(assets), 1)
+        else:
+            asset_availability_index = 94.8
+
         return {
             "success": True,
             "active_trains": len(trains),
@@ -37,7 +44,7 @@ class AnalyticsService:
             "avg_block_duration_minutes": 58.5,
             "tasks_bundled_count": 42,
             "train_delays_avoided_minutes": 145,
-            "asset_availability_index": 94.8,
+            "asset_availability_index": asset_availability_index,
             "department_distribution": {
                 "CIVIL": civil_count,
                 "ELECTRICAL": elec_count,

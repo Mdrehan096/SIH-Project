@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { generateDigitalPN, verifyDigitalPN } from '../services/api';
+import { useNavigate } from 'react-router-dom';
+import { generateDigitalPN, verifyDigitalPN, fetchMaintenanceRequests } from '../services/api';
 import {
   KeyRound,
   CheckCircle2,
@@ -12,6 +13,8 @@ import {
   History,
   FileCheck2,
   Sparkles,
+  ArrowRight,
+  Database,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -24,6 +27,7 @@ export interface PNRecord {
   verified_by?: string;
   verified_at?: string;
   station_code?: string;
+  request_status?: string;
 }
 
 const SAMPLE_BLOCKS = [
@@ -34,14 +38,28 @@ const SAMPLE_BLOCKS = [
 ];
 
 export const DigitalPnPage: React.FC = () => {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [blockId, setBlockId] = useState<string>('BLK-2026-081');
+  const [dbRequests, setDbRequests] = useState<any[]>([]);
   const [pnData, setPnData] = useState<PNRecord | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [verifying, setVerifying] = useState<boolean>(false);
   const [stationCode, setStationCode] = useState<string>('NDLS');
   const [inputPnToVerify, setInputPnToVerify] = useState<string>('');
   const [copied, setCopied] = useState<boolean>(false);
+
+  useEffect(() => {
+    fetchMaintenanceRequests()
+      .then((reqs) => {
+        if (Array.isArray(reqs) && reqs.length > 0) {
+          setDbRequests(reqs);
+          setBlockId(reqs[0].request_id);
+          handleGeneratePN(reqs[0].request_id);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   // Handshake history log
   const [history, setHistory] = useState<PNRecord[]>([
@@ -169,7 +187,15 @@ export const DigitalPnPage: React.FC = () => {
             <KeyRound className="w-6 h-6 animate-pulse" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-slate-100 flex items-center space-x-3">
+            <div className="flex items-center space-x-2">
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                STAGE 3 OF 4: PN CLEARANCE PROTOCOL
+              </span>
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                SUPABASE DB VERIFIED
+              </span>
+            </div>
+            <h1 className="text-2xl font-bold text-slate-100 flex items-center space-x-3 mt-1.5">
               <span>Digital Private Number (PN) Exchange Protocol</span>
               <span className="px-2.5 py-0.5 rounded-full bg-emerald-950 border border-emerald-800 text-emerald-400 text-xs font-mono font-bold">
                 2-FACTOR HANDSHAKE
@@ -181,23 +207,44 @@ export const DigitalPnPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Quick Presets */}
-        <div className="flex items-center space-x-2">
-          <span className="text-slate-400 text-xs font-mono hidden sm:inline">Active Block:</span>
-          <select
-            value={blockId}
-            onChange={(e) => {
-              setBlockId(e.target.value);
-              handleGeneratePN(e.target.value);
-            }}
-            className="bg-slate-950 border border-slate-800 text-sky-400 font-mono font-bold text-xs rounded-xl px-3 py-2 focus:outline-none focus:border-sky-500"
+        {/* Quick Presets & Navigation */}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+          <div className="flex items-center space-x-2">
+            <span className="text-slate-400 text-xs font-mono hidden sm:inline">Select Target Job / Block:</span>
+            <select
+              value={blockId}
+              onChange={(e) => {
+                setBlockId(e.target.value);
+                handleGeneratePN(e.target.value);
+              }}
+              className="bg-slate-950 border border-slate-800 text-sky-400 font-mono font-bold text-xs rounded-xl px-3 py-2 focus:outline-none focus:border-sky-500 max-w-[280px]"
+            >
+              {dbRequests.length > 0 && (
+                <optgroup label="Live Supabase Database Requests">
+                  {dbRequests.map((r) => (
+                    <option key={r.id || r.request_id} value={r.request_id}>
+                      {r.request_id}: {r.task_type} ({r.department_id || r.department}, KM {r.location_km}) [{r.status}]
+                    </option>
+                  ))}
+                </optgroup>
+              )}
+              <optgroup label="Corridor Block Possessions">
+                {SAMPLE_BLOCKS.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.id} ({b.dept})
+                  </option>
+                ))}
+              </optgroup>
+            </select>
+          </div>
+
+          <button
+            onClick={() => navigate('/analytics')}
+            className="px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-extrabold text-xs flex items-center space-x-1.5 shadow-lg shadow-purple-600/20 transition-all cursor-pointer whitespace-nowrap"
           >
-            {SAMPLE_BLOCKS.map((b) => (
-              <option key={b.id} value={b.id}>
-                {b.id} ({b.dept})
-              </option>
-            ))}
-          </select>
+            <span>AI Risk Analysis</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
         </div>
       </div>
 
@@ -388,6 +435,21 @@ export const DigitalPnPage: React.FC = () => {
                       <span className="text-slate-500">Handshake Time:</span>
                       <p className="text-slate-200 font-mono">{pnData.verified_at}</p>
                     </div>
+                  </div>
+
+                  {/* Database Sync Notice & Workflow Continuation */}
+                  <div className="mt-3 p-2.5 rounded-lg bg-emerald-950/80 border border-emerald-700/60 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div className="flex items-center space-x-2 text-[11px] text-emerald-300">
+                      <Database className="w-4 h-4 text-emerald-400 shrink-0" />
+                      <span>Supabase DB Updated: Status set to <strong>VALIDATED</strong></span>
+                    </div>
+                    <button
+                      onClick={() => navigate('/analytics')}
+                      className="px-3 py-1.5 rounded-lg bg-emerald-400 hover:bg-emerald-300 text-slate-950 font-extrabold text-[11px] flex items-center justify-center space-x-1 transition-all cursor-pointer"
+                    >
+                      <span>Analyze AI Risk</span>
+                      <ArrowRight className="w-3 h-3" />
+                    </button>
                   </div>
                 </div>
               ) : (

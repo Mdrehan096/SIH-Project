@@ -13,3 +13,7 @@ class AssetResponse(BaseModel):
     installation_year: Optional[int] = None
     health_score: float
     status: str
+    active_requests_count: Optional[int] = 0
+    latest_request_id: Optional[str] = None
+    latest_task_type: Optional[str] = None
+    latest_severity: Optional[int] = None

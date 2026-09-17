@@ -272,6 +272,19 @@ _MOCK_TRAINS = [
     }
 ]
 
+_MOCK_ASSETS = [
+    {"id": "TRK-120", "asset_code": "TRK-KM-120-DN", "name": "Down Main Track Segment KM 120.0", "asset_type": "TRACK", "department_id": "CIVIL", "section_id": "SEC-NDLS-AGC-01", "location_km": 120.0, "installation_year": 2018, "health_score": 72.5, "status": "MAINTENANCE_REQUIRED"},
+    {"id": "TRK-122", "asset_code": "TRK-KM-122-DN", "name": "Down Main Track Segment KM 122.0", "asset_type": "TRACK", "department_id": "CIVIL", "section_id": "SEC-NDLS-AGC-01", "location_km": 122.0, "installation_year": 2017, "health_score": 68.0, "status": "MAINTENANCE_REQUIRED"},
+    {"id": "TRK-124", "asset_code": "TRK-KM-124-DN", "name": "Down Main Track Segment KM 124.5", "asset_type": "TRACK", "department_id": "CIVIL", "section_id": "SEC-NDLS-AGC-01", "location_km": 124.5, "installation_year": 2015, "health_score": 54.0, "status": "DEGRADED"},
+    {"id": "OHE-124", "asset_code": "OHE-KM-124-MAIN", "name": "OHE Portal & Catenary Line KM 124.2", "asset_type": "OHE", "department_id": "ELECTRICAL", "section_id": "SEC-NDLS-AGC-01", "location_km": 124.2, "installation_year": 2016, "health_score": 81.0, "status": "MAINTENANCE_REQUIRED"},
+    {"id": "SIG-125", "asset_code": "SIG-KM-125-INT", "name": "Automatic Signal Interlocking Box 125-B", "asset_type": "SIGNAL", "department_id": "SIGNAL_TELECOM", "section_id": "SEC-NDLS-AGC-01", "location_km": 125.0, "installation_year": 2019, "health_score": 88.0, "status": "MAINTENANCE_REQUIRED"},
+    {"id": "TRK-126", "asset_code": "TRK-KM-126-DN", "name": "Down Main Track Segment KM 126.0", "asset_type": "TRACK", "department_id": "CIVIL", "section_id": "SEC-NDLS-AGC-01", "location_km": 126.0, "installation_year": 2016, "health_score": 75.0, "status": "OPERATIONAL"},
+    {"id": "TRK-128", "asset_code": "TRK-KM-128-DN", "name": "Down Main Track Segment KM 128.5", "asset_type": "TRACK", "department_id": "CIVIL", "section_id": "SEC-NDLS-AGC-01", "location_km": 128.5, "installation_year": 2014, "health_score": 64.0, "status": "MAINTENANCE_REQUIRED"},
+    {"id": "TRK-045", "asset_code": "TRK-KM-045-UP", "name": "Up Main Track Segment KM 45.0", "asset_type": "TRACK", "department_id": "CIVIL", "section_id": "SEC-NDLS-AGC-01", "location_km": 45.0, "installation_year": 2019, "health_score": 82.0, "status": "OPERATIONAL"},
+    {"id": "OHE-046", "asset_code": "OHE-KM-046-MAIN", "name": "OHE Substation Segment KM 46.0", "asset_type": "OHE", "department_id": "ELECTRICAL", "section_id": "SEC-NDLS-AGC-01", "location_km": 46.0, "installation_year": 2017, "health_score": 79.0, "status": "OPERATIONAL"},
+    {"id": "SIG-180", "asset_code": "SIG-KM-180-JNC", "name": "Agra Junction Approach Interlocking 180", "asset_type": "SIGNAL", "department_id": "SIGNAL_TELECOM", "section_id": "SEC-NDLS-AGC-01", "location_km": 180.0, "installation_year": 2015, "health_score": 62.0, "status": "MAINTENANCE_REQUIRED"},
+]
+
 
 def _ensure_asset_exists(asset_id: Optional[str], department_id: str, section_id: str, location_km: float) -> Optional[str]:
     """Ensures asset exists in Supabase to prevent foreign key violation on insert."""
@@ -364,6 +377,27 @@ def create_maintenance_request_in_db(req_data: Dict[str, Any]) -> Dict[str, Any]
                 "status": req_data.get("status", "PENDING"),
             }
             res = db_manager.supabase_client.table("maintenance_requests").insert(db_payload).execute()
+            
+            # 3. Synchronize asset health and status in Supabase & mock storage
+            if validated_asset_id:
+                try:
+                    severity = int(req_data.get("severity", 50))
+                    new_asset_status = "DEGRADED" if severity >= 80 else "MAINTENANCE_REQUIRED"
+                    new_health = round(max(15.0, min(92.0, 100.0 - severity * 0.5)), 1)
+                    db_manager.supabase_client.table("assets").update({
+                        "status": new_asset_status,
+                        "health_score": new_health
+                    }).eq("id", validated_asset_id).execute()
+                    logger.info(f"Updated asset {validated_asset_id} status to {new_asset_status} (Health: {new_health}) in Supabase.")
+                except Exception as e:
+                    logger.warning(f"Could not update asset {validated_asset_id} status in Supabase: {e}")
+
+                for a in _MOCK_ASSETS:
+                    if a.get("id") == validated_asset_id or a.get("asset_code") == validated_asset_id:
+                        a["status"] = "DEGRADED" if int(req_data.get("severity", 50)) >= 80 else "MAINTENANCE_REQUIRED"
+                        a["health_score"] = round(max(15.0, min(92.0, 100.0 - int(req_data.get("severity", 50)) * 0.5)), 1)
+                        break
+
             if res.data and len(res.data) > 0:
                 inserted_row = res.data[0]
                 if "department" not in inserted_row and "department_id" in inserted_row:
@@ -450,6 +484,54 @@ def delete_maintenance_request_from_db(request_id: str) -> bool:
             logger.error(f"Error deleting maintenance request {request_id} from Supabase: {e}")
 
     return removed_from_mock or removed_from_db
+
+
+def get_all_assets() -> List[Dict[str, Any]]:
+    """
+    Fetches railway asset health and inventory from Supabase PostgreSQL database.
+    Correlates each asset with active maintenance requests to provide real-time status.
+    """
+    assets = [dict(a) for a in _MOCK_ASSETS]
+    if db_manager.supabase_client:
+        try:
+            res = db_manager.supabase_client.table("assets").select("*").order("location_km", desc=False).execute()
+            if res.data and len(res.data) > 0:
+                assets = res.data
+        except Exception as e:
+            logger.error(f"Error fetching assets from Supabase: {e}")
+
+    # Correlate with active maintenance requests to enrich asset health and issue status
+    reqs = get_all_maintenance_requests()
+    for a in assets:
+        matching_reqs = [
+            r for r in reqs 
+            if (r.get("asset_id") == a.get("id") or r.get("asset_id") == a.get("asset_code")) 
+            and r.get("status") not in ["COMPLETED", "CANCELLED", "REJECTED"]
+        ]
+        a["active_requests_count"] = len(matching_reqs)
+        if matching_reqs:
+            latest = matching_reqs[0]
+            a["latest_request_id"] = latest.get("request_id")
+            a["latest_task_type"] = latest.get("task_type")
+            a["latest_severity"] = latest.get("severity")
+            if latest.get("severity", 0) >= 80:
+                a["status"] = "DEGRADED"
+            elif a.get("status") == "OPERATIONAL":
+                a["status"] = "MAINTENANCE_REQUIRED"
+        else:
+            a["latest_request_id"] = None
+            a["latest_task_type"] = None
+            a["latest_severity"] = None
+
+    return assets
+
+
+def get_asset_by_id(asset_id: str) -> Optional[Dict[str, Any]]:
+    assets = get_all_assets()
+    for a in assets:
+        if a.get("id") == asset_id or a.get("asset_code") == asset_id:
+            return a
+    return None
 
 
 def get_all_trains() -> List[Dict[str, Any]]:

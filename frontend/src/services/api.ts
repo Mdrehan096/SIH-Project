@@ -97,3 +97,13 @@ export const calculateRiskScore = async (payload: any): Promise<any> => {
   const response = await apiClient.post('/risk/score', payload);
   return response.data;
 };
+
+export const fetchAssets = async (): Promise<any[]> => {
+  const response = await apiClient.get<any[]>('/assets');
+  return response.data;
+};
+
+export const fetchAssetById = async (assetId: string): Promise<any> => {
+  const response = await apiClient.get<any>(`/assets/${assetId}`);
+  return response.data;
+};

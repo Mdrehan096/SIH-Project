@@ -69,6 +69,18 @@ class DigitalPNService:
             except Exception as e:
                 logger.warning(f"Note on Supabase PN verification update: {e}")
 
+        # Synchronize maintenance request status to 'VALIDATED' in Supabase
+        try:
+            from app.db.queries import update_maintenance_request_status, get_maintenance_request_by_id
+            req = get_maintenance_request_by_id(block_id)
+            if req:
+                update_maintenance_request_status(block_id, new_status="VALIDATED")
+                record["request_id"] = req.get("request_id")
+                record["request_status"] = "VALIDATED"
+                logger.info(f"Updated maintenance request {block_id} status to VALIDATED upon PN verification.")
+        except Exception as e:
+            logger.warning(f"Could not update maintenance request status for {block_id}: {e}")
+
         logger.info(f"Verified Digital PN '{pn_code}' for Block '{block_id}' at Station {station_code} by {user_name}.")
         return record
 
