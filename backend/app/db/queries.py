@@ -273,11 +273,46 @@ _MOCK_TRAINS = [
 ]
 
 
+def _ensure_asset_exists(asset_id: Optional[str], department_id: str, section_id: str, location_km: float) -> Optional[str]:
+    """Ensures asset exists in Supabase to prevent foreign key violation on insert."""
+    if not asset_id or not db_manager.supabase_client:
+        return asset_id
+    try:
+        check = db_manager.supabase_client.table("assets").select("id").eq("id", asset_id).execute()
+        if check.data and len(check.data) > 0:
+            return asset_id
+        # If not found, attempt to insert basic asset record
+        asset_row = {
+            "id": asset_id,
+            "asset_code": asset_id,
+            "name": f"Track Asset {asset_id}",
+            "asset_type": "TRACK",
+            "department_id": department_id if department_id in ["CIVIL", "ELECTRICAL", "SIGNAL_TELECOM"] else "CIVIL",
+            "section_id": section_id or "SEC-NDLS-AGC-01",
+            "location_km": location_km,
+            "installation_year": 2020,
+            "health_score": 75.0,
+            "status": "OPERATIONAL"
+        }
+        ins = db_manager.supabase_client.table("assets").insert(asset_row).execute()
+        if ins.data:
+            return asset_id
+    except Exception as e:
+        logger.warning(f"Could not verify or auto-create asset {asset_id} in Supabase: {e}. Setting asset_id to None.")
+        return None
+    return asset_id
+
+
 def get_all_maintenance_requests() -> List[Dict[str, Any]]:
     if db_manager.supabase_client:
         try:
-            res = db_manager.supabase_client.table("maintenance_requests").select("*").execute()
+            res = db_manager.supabase_client.table("maintenance_requests").select("*").order("created_at", desc=True).execute()
             if res.data and len(res.data) > 0:
+                for r in res.data:
+                    if "department" not in r and "department_id" in r:
+                        r["department"] = r["department_id"]
+                    if "risk_score" not in r:
+                        r["risk_score"] = float(r.get("severity", 50))
                 return res.data
         except Exception as e:
             logger.error(f"Error fetching maintenance requests from Supabase: {e}")
@@ -292,7 +327,64 @@ def get_maintenance_request_by_id(request_id: str) -> Optional[Dict[str, Any]]:
     return None
 
 
-def update_maintenance_request_status(request_id: str, new_status: str, priority: Optional[str] = None) -> Optional[Dict[str, Any]]:
+def create_maintenance_request_in_db(req_data: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Persists a new maintenance request directly into Supabase PostgreSQL table 'maintenance_requests'.
+    Also updates the in-memory fallback list to maintain synchronicity across modes.
+    """
+    # 1. Update in-memory fallback list
+    if req_data not in _MOCK_MAINTENANCE_REQUESTS:
+        _MOCK_MAINTENANCE_REQUESTS.insert(0, req_data)
+
+    # 2. Persist to Supabase if client is active
+    if db_manager.supabase_client:
+        try:
+            dept_id = req_data.get("department_id") or req_data.get("department") or "CIVIL"
+            sec_id = req_data.get("section_id") or "SEC-NDLS-AGC-01"
+            loc_km = float(req_data.get("location_km", 120.0))
+            raw_asset_id = req_data.get("asset_id")
+            validated_asset_id = _ensure_asset_exists(raw_asset_id, dept_id, sec_id, loc_km)
+
+            db_payload = {
+                "id": req_data["id"],
+                "request_id": req_data["request_id"],
+                "source_system": req_data.get("source_system", "TMS"),
+                "department_id": dept_id,
+                "asset_id": validated_asset_id,
+                "task_type": req_data.get("task_type", "Routine Maintenance"),
+                "section_id": sec_id,
+                "location_km": loc_km,
+                "latitude": req_data.get("latitude"),
+                "longitude": req_data.get("longitude"),
+                "priority": req_data.get("priority", "HIGH"),
+                "severity": int(req_data.get("severity", 50)),
+                "estimated_duration_minutes": int(req_data.get("estimated_duration_minutes", 30)),
+                "required_block_type": req_data.get("required_block_type", "TRAFFIC_BLOCK"),
+                "safety_requirements": req_data.get("safety_requirements", []),
+                "status": req_data.get("status", "PENDING"),
+            }
+            res = db_manager.supabase_client.table("maintenance_requests").insert(db_payload).execute()
+            if res.data and len(res.data) > 0:
+                inserted_row = res.data[0]
+                if "department" not in inserted_row and "department_id" in inserted_row:
+                    inserted_row["department"] = inserted_row["department_id"]
+                if "risk_score" not in inserted_row:
+                    inserted_row["risk_score"] = float(inserted_row.get("severity", 50))
+                logger.info(f"Successfully inserted maintenance request {req_data['request_id']} into Supabase database.")
+                return inserted_row
+        except Exception as e:
+            logger.error(f"Failed to persist maintenance request to Supabase: {e}")
+
+    return req_data
+
+
+def update_maintenance_request_status(
+    request_id: str, 
+    new_status: str, 
+    priority: Optional[str] = None,
+    estimated_duration_minutes: Optional[int] = None,
+    location_km: Optional[float] = None
+) -> Optional[Dict[str, Any]]:
     # 1. Update in-memory list
     found = None
     for req in _MOCK_MAINTENANCE_REQUESTS:
@@ -300,6 +392,10 @@ def update_maintenance_request_status(request_id: str, new_status: str, priority
             req["status"] = new_status
             if priority:
                 req["priority"] = priority
+            if estimated_duration_minutes is not None:
+                req["estimated_duration_minutes"] = estimated_duration_minutes
+            if location_km is not None:
+                req["location_km"] = location_km
             found = req
             break
 
@@ -309,16 +405,51 @@ def update_maintenance_request_status(request_id: str, new_status: str, priority
             update_data = {"status": new_status}
             if priority:
                 update_data["priority"] = priority
+            if estimated_duration_minutes is not None:
+                update_data["estimated_duration_minutes"] = estimated_duration_minutes
+            if location_km is not None:
+                update_data["location_km"] = location_km
 
             res = db_manager.supabase_client.table("maintenance_requests").update(update_data).eq("request_id", request_id).execute()
             if not res.data:
                 res = db_manager.supabase_client.table("maintenance_requests").update(update_data).eq("id", request_id).execute()
             if res.data and len(res.data) > 0:
                 found = res.data[0]
+                if "department" not in found and "department_id" in found:
+                    found["department"] = found["department_id"]
+                if "risk_score" not in found:
+                    found["risk_score"] = float(found.get("severity", 50))
         except Exception as e:
             logger.error(f"Error updating maintenance request status in Supabase: {e}")
 
     return found
+
+
+def delete_maintenance_request_from_db(request_id: str) -> bool:
+    """
+    Deletes a maintenance request from Supabase and in-memory list.
+    """
+    # 1. Remove from in-memory fallback
+    removed_from_mock = False
+    for req in list(_MOCK_MAINTENANCE_REQUESTS):
+        if req.get("request_id") == request_id or req.get("id") == request_id:
+            _MOCK_MAINTENANCE_REQUESTS.remove(req)
+            removed_from_mock = True
+
+    # 2. Remove from Supabase
+    removed_from_db = False
+    if db_manager.supabase_client:
+        try:
+            res = db_manager.supabase_client.table("maintenance_requests").delete().eq("request_id", request_id).execute()
+            if not res.data:
+                res = db_manager.supabase_client.table("maintenance_requests").delete().eq("id", request_id).execute()
+            if res.data and len(res.data) > 0:
+                removed_from_db = True
+                logger.info(f"Successfully deleted maintenance request {request_id} from Supabase.")
+        except Exception as e:
+            logger.error(f"Error deleting maintenance request {request_id} from Supabase: {e}")
+
+    return removed_from_mock or removed_from_db
 
 
 def get_all_trains() -> List[Dict[str, Any]]:

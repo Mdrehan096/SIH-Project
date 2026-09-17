@@ -5,7 +5,7 @@ from typing import Optional, List
 class MaintenanceRequestCreate(BaseModel):
     source_system: str = Field(..., json_schema_extra={"example": "TMS"})
     department_id: str = Field(..., json_schema_extra={"example": "CIVIL"})
-    asset_id: str = Field(..., json_schema_extra={"example": "TRK-124"})
+    asset_id: Optional[str] = Field("TRK-124", json_schema_extra={"example": "TRK-124"})
     task_type: str = Field(..., json_schema_extra={"example": "Track Repair"})
     section_id: str = Field("SEC-NDLS-AGC-01", json_schema_extra={"example": "SEC-NDLS-AGC-01"})
     location_km: float = Field(..., json_schema_extra={"example": 124.5})
@@ -30,7 +30,8 @@ class MaintenanceRequestResponse(BaseModel):
     request_id: str
     source_system: str
     department_id: str
-    asset_id: str
+    department: Optional[str] = None
+    asset_id: Optional[str] = None
     task_type: str
     section_id: str
     location_km: float
@@ -40,7 +41,7 @@ class MaintenanceRequestResponse(BaseModel):
     severity: int
     estimated_duration_minutes: int
     required_block_type: str
-    safety_requirements: List[str] = []
+    safety_requirements: Optional[List[str]] = []
     status: str
     risk_score: Optional[float] = None
     created_at: str

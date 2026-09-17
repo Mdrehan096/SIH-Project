@@ -7,7 +7,9 @@ from typing import List, Dict, Any, Optional
 from app.db.queries import (
     get_all_maintenance_requests,
     get_maintenance_request_by_id,
+    create_maintenance_request_in_db,
     update_maintenance_request_status,
+    delete_maintenance_request_from_db,
 )
 
 
@@ -23,10 +25,16 @@ class MaintenanceController:
     def get_request_by_id(self, request_id: str) -> Optional[Dict[str, Any]]:
         return get_maintenance_request_by_id(request_id)
 
+    def create_request(self, req_data: Dict[str, Any]) -> Dict[str, Any]:
+        return create_maintenance_request_in_db(req_data)
+
     def update_request(self, request_id: str, updates: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         status = updates.get("status", "COMPLETED")
         priority = updates.get("priority")
         return update_maintenance_request_status(request_id, new_status=status, priority=priority)
+
+    def delete_request(self, request_id: str) -> bool:
+        return delete_maintenance_request_from_db(request_id)
 
 
 maintenance_controller = MaintenanceController()
