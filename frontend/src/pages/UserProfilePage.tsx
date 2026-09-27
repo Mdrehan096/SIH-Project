@@ -8,81 +8,104 @@ export const UserProfilePage: React.FC = () => {
   if (!user) return null;
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-xl font-bold text-white flex items-center space-x-2">
-          <UserCheck className="w-5 h-5 text-sky-400" />
-          <span>Railway Officer Profile & Security Credentials</span>
-        </h1>
-        <p className="text-xs text-slate-400 mt-1">
-          Official Railway Enterprise User Profile, Role Permissions, and Divisional Assignment.
-        </p>
+    <div className="space-y-8 pb-12">
+      {/* Header Banner */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-xs">
+        <div className="flex items-start gap-4">
+          <div className="w-14 h-14 rounded-2xl bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-700 shrink-0 shadow-xs">
+            <UserCheck className="w-8 h-8" />
+          </div>
+          <div>
+            <div className="flex flex-wrap items-center gap-2 mb-2">
+              <span className="px-3 py-1 rounded-full text-xs font-mono font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                ACTIVE CREDENTIAL
+              </span>
+              <span className="px-3 py-1 rounded-full text-xs font-mono font-bold bg-blue-50 text-blue-800 border border-blue-200">
+                OFFICIAL RAILWAY PORTAL
+              </span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-slate-900 tracking-tight">
+              Railway Officer Profile & Security Credentials
+            </h1>
+            <p className="text-sm sm:text-base text-slate-600 mt-2 max-w-3xl leading-relaxed">
+              Official Railway Enterprise User Profile, Role Permissions, and Divisional Assignment.
+            </p>
+          </div>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Officer Card */}
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 text-center">
-          <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-sky-500 to-blue-600 border-4 border-slate-800 mx-auto flex items-center justify-center text-white font-extrabold text-2xl shadow-xl">
+        <div className="bg-white border border-slate-200 rounded-2xl p-8 space-y-5 text-center shadow-xs">
+          <div className="w-24 h-24 rounded-full bg-blue-700 text-white font-black text-3xl mx-auto flex items-center justify-center shadow-md">
             {user.full_name.split(' ').map((n) => n[0]).join('').slice(0, 2)}
           </div>
           <div>
-            <h3 className="text-base font-bold text-white">{user.full_name}</h3>
-            <p className="text-xs text-sky-400 font-mono mt-0.5">{user.employee_id}</p>
+            <h3 className="text-xl sm:text-2xl font-black text-slate-900">{user.full_name}</h3>
+            <p className="text-sm sm:text-base text-blue-700 font-mono font-bold mt-1">{user.employee_id}</p>
           </div>
-          <span className="px-3 py-1 rounded-full text-xs font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 inline-block">
+          <span className="px-4 py-1.5 rounded-full text-xs sm:text-sm font-mono font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 inline-block">
             {user.role}
           </span>
         </div>
 
         {/* Details Card */}
-        <div className="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-            <h4 className="font-bold text-slate-200 text-sm flex items-center space-x-2">
-              <BadgeCheck className="w-4 h-4 text-sky-400" />
+        <div className="lg:col-span-2 bg-white border border-slate-200 rounded-2xl p-8 space-y-6 shadow-xs">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+            <h4 className="font-extrabold text-slate-900 text-lg sm:text-xl flex items-center gap-2.5">
+              <BadgeCheck className="w-6 h-6 text-blue-700" />
               <span>Official Assignment Credentials</span>
             </h4>
-            <span className="text-[10px] font-mono bg-sky-950 text-sky-300 px-2 py-0.5 rounded border border-sky-800">
+            <span className="text-xs font-mono font-bold bg-emerald-50 text-emerald-800 px-3 py-1 rounded-xl border border-emerald-200">
               ACTIVE ACCOUNT
             </span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-            <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 flex items-center space-x-3">
-              <Mail className="w-4 h-4 text-slate-400" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 flex items-center gap-4">
+              <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-700 shrink-0">
+                <Mail className="w-5 h-5" />
+              </div>
               <div>
-                <span className="text-slate-500 text-[10px] uppercase font-mono block">Government Email</span>
-                <span className="font-mono font-semibold text-slate-200">{user.email}</span>
+                <span className="text-slate-500 text-xs uppercase font-bold tracking-wider block">Government Email</span>
+                <span className="font-mono font-bold text-slate-900 text-sm sm:text-base block mt-0.5">{user.email}</span>
               </div>
             </div>
 
-            <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 flex items-center space-x-3">
-              <Building className="w-4 h-4 text-slate-400" />
+            <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 flex items-center gap-4">
+              <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-700 shrink-0">
+                <Building className="w-5 h-5" />
+              </div>
               <div>
-                <span className="text-slate-500 text-[10px] uppercase font-mono block">Department</span>
-                <span className="font-mono font-semibold text-slate-200">{user.department_id}</span>
+                <span className="text-slate-500 text-xs uppercase font-bold tracking-wider block">Department</span>
+                <span className="font-mono font-bold text-slate-900 text-sm sm:text-base block mt-0.5">{user.department_id}</span>
               </div>
             </div>
 
-            <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 flex items-center space-x-3">
-              <MapPin className="w-4 h-4 text-slate-400" />
+            <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 flex items-center gap-4">
+              <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-700 shrink-0">
+                <MapPin className="w-5 h-5" />
+              </div>
               <div>
-                <span className="text-slate-500 text-[10px] uppercase font-mono block">Zone & Division</span>
-                <span className="font-mono font-semibold text-slate-200">{user.zone} • {user.division}</span>
+                <span className="text-slate-500 text-xs uppercase font-bold tracking-wider block">Zone & Division</span>
+                <span className="font-mono font-bold text-slate-900 text-sm sm:text-base block mt-0.5">{user.zone} • {user.division}</span>
               </div>
             </div>
 
-            <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 flex items-center space-x-3">
-              <Lock className="w-4 h-4 text-slate-400" />
+            <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 flex items-center gap-4">
+              <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-700 shrink-0">
+                <Lock className="w-5 h-5" />
+              </div>
               <div>
-                <span className="text-slate-500 text-[10px] uppercase font-mono block">Station Code</span>
-                <span className="font-mono font-semibold text-sky-400">{user.station_code}</span>
+                <span className="text-slate-500 text-xs uppercase font-bold tracking-wider block">Station Code</span>
+                <span className="font-mono font-bold text-blue-800 text-sm sm:text-base block mt-0.5">{user.station_code}</span>
               </div>
             </div>
           </div>
 
-          <div className="p-3.5 rounded-xl bg-sky-950/20 border border-sky-800/30 text-xs text-sky-300 flex items-center space-x-2">
-            <ShieldCheck className="w-4 h-4 text-emerald-400" />
-            <span>Role Permissions Verified: Access authorized for Maintenance Planning, CP-SAT Solver, PN Handshake & Audit Logs.</span>
+          <div className="p-5 rounded-2xl bg-blue-50/80 border border-blue-200 text-sm text-blue-950 font-semibold flex items-center gap-3">
+            <ShieldCheck className="w-6 h-6 text-blue-700 shrink-0" />
+            <span>Role Permissions Verified: Full authorization for Maintenance Planning, CP-SAT Solver, PN Handshake & Audit Logs.</span>
           </div>
         </div>
       </div>

@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
-import { Sun, Moon, Monitor, Sliders, CheckCircle2 } from 'lucide-react';
+import { Sun, Sliders, CheckCircle2 } from 'lucide-react';
 
 export const AppearanceSettingsPage: React.FC = () => {
   const {
     theme,
-    setTheme,
     density,
     setDensity,
     fontSize,
@@ -39,93 +38,87 @@ export const AppearanceSettingsPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-xl font-bold text-white flex items-center space-x-2">
-          <Sliders className="w-5 h-5 text-sky-400" />
-          <span>System Appearance & Theme Personalization Settings</span>
-        </h1>
-        <p className="text-xs text-slate-400 mt-1">
-          Customize UI light/dark theme modes, typography scale, layout density, and Mapbox map rendering styles.
-        </p>
+    <div className="space-y-8 pb-12">
+      {/* Header Banner */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-xs">
+        <div className="flex items-start gap-4">
+          <div className="w-14 h-14 rounded-2xl bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-700 shrink-0 shadow-xs">
+            <Sliders className="w-8 h-8" />
+          </div>
+          <div>
+            <div className="flex flex-wrap items-center gap-2 mb-2">
+              <span className="px-3 py-1 rounded-full text-xs font-mono font-bold bg-blue-50 text-blue-800 border border-blue-200">
+                PORTAL PERSONALIZATION
+              </span>
+              <span className="px-3 py-1 rounded-full text-xs font-mono font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                GIGW 3.0 ACCESSIBLE
+              </span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-slate-900 tracking-tight">
+              System Appearance & Display Preferences
+            </h1>
+            <p className="text-sm sm:text-base text-slate-600 mt-2 max-w-3xl leading-relaxed">
+              Customize typography scale, layout density, and Mapbox map rendering styles aligned with Indian Railways standards.
+            </p>
+          </div>
+        </div>
       </div>
 
       {savedMsg && (
-        <div className="p-3.5 rounded-xl bg-emerald-950/40 border border-emerald-800/60 text-xs text-emerald-300 flex items-center space-x-2 font-mono">
-          <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+        <div className="p-4 sm:p-5 rounded-2xl bg-emerald-50 border border-emerald-200 text-sm text-emerald-900 flex items-center gap-3 font-semibold shadow-xs">
+          <CheckCircle2 className="w-5 h-5 text-emerald-700 shrink-0" />
           <span>{savedMsg}</span>
         </div>
       )}
 
       {/* Theme Mode Selection */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
-        <h3 className="font-bold text-white text-sm">Theme Mode Selection</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <button
-            type="button"
-            onClick={() => setTheme('light')}
-            className={`p-5 rounded-2xl border flex flex-col items-center space-y-2 transition-all ${
-              theme === 'light'
-                ? 'bg-sky-500/10 border-sky-500 text-sky-400 ring-2 ring-sky-500/30 font-bold'
-                : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <Sun className="w-6 h-6 text-amber-400" />
-            <span className="text-xs">NIC Light Mode</span>
-            <span className="text-[10px] text-slate-500 font-mono">Clean white/slate background</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setTheme('dark')}
-            className={`p-5 rounded-2xl border flex flex-col items-center space-y-2 transition-all ${
-              theme === 'dark'
-                ? 'bg-sky-500/10 border-sky-500 text-sky-400 ring-2 ring-sky-500/30 font-bold'
-                : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <Moon className="w-6 h-6 text-sky-400" />
-            <span className="text-xs">Enterprise Dark Mode</span>
-            <span className="text-[10px] text-slate-500 font-mono">Deep navy command console</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setTheme('system')}
-            className={`p-5 rounded-2xl border flex flex-col items-center space-y-2 transition-all ${
-              theme === 'system'
-                ? 'bg-sky-500/10 border-sky-500 text-sky-400 ring-2 ring-sky-500/30 font-bold'
-                : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <Monitor className="w-6 h-6 text-emerald-400" />
-            <span className="text-xs">System Match</span>
-            <span className="text-[10px] text-slate-500 font-mono">Follow OS preference</span>
-          </button>
+      <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 space-y-4 shadow-xs">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+          <h3 className="font-extrabold text-slate-900 text-lg sm:text-xl">Official Portal Theme Standard</h3>
+          <span className="px-3 py-1 rounded-full text-xs font-mono font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+            PERMANENT DAYLIGHT STANDARD
+          </span>
+        </div>
+        <div className="p-6 rounded-2xl bg-slate-50 border border-slate-200 flex items-start gap-4">
+          <div className="p-3 rounded-xl bg-blue-50 border border-blue-200 text-blue-700 shrink-0 shadow-xs">
+            <Sun className="w-6 h-6" />
+          </div>
+          <div>
+            <h4 className="text-sm sm:text-base font-bold text-slate-900">Government of India · Indian Railways Official Daylight Portal</h4>
+            <p className="text-xs sm:text-sm text-slate-600 mt-1 leading-relaxed font-medium">
+              Per Ministry of Railways and Guidelines for Indian Government Websites (GIGW 3.0) standards, the operations command desk is standardized on high-contrast Daylight Paper theme for maximum legibility, zero operator fatigue, and certified STQC accessibility. Dark themes are disabled across official operations terminals.
+            </p>
+          </div>
         </div>
       </div>
 
       {/* Density & Map Style Settings */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
-          <h3 className="font-bold text-white text-sm">Layout Density & Typography Scale</h3>
-          
-          <div className="space-y-3 text-xs">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 space-y-5 shadow-xs">
+          <h3 className="font-extrabold text-slate-900 text-lg">Layout Density & Font Size Scale</h3>
+
+          <div className="space-y-4">
             <div>
-              <label className="block text-slate-400 mb-1 font-medium">Layout Density:</label>
-              <div className="grid grid-cols-2 gap-2 font-mono">
+              <label className="block text-xs sm:text-sm font-bold text-slate-700 uppercase tracking-wider mb-2">
+                Layout Density:
+              </label>
+              <div className="grid grid-cols-2 gap-3">
                 <button
                   onClick={() => setDensity('comfortable')}
-                  className={`p-2.5 rounded-xl border text-center ${
-                    density === 'comfortable' ? 'bg-sky-950 text-sky-400 border-sky-800 font-bold' : 'bg-slate-950 text-slate-400 border-slate-800'
+                  className={`h-11 rounded-xl border text-center font-bold text-sm transition-all cursor-pointer ${
+                    density === 'comfortable'
+                      ? 'bg-blue-700 text-white border-blue-700 shadow-xs'
+                      : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'
                   }`}
                 >
                   Comfortable
                 </button>
                 <button
                   onClick={() => setDensity('compact')}
-                  className={`p-2.5 rounded-xl border text-center ${
-                    density === 'compact' ? 'bg-sky-950 text-sky-400 border-sky-800 font-bold' : 'bg-slate-950 text-slate-400 border-slate-800'
+                  className={`h-11 rounded-xl border text-center font-bold text-sm transition-all cursor-pointer ${
+                    density === 'compact'
+                      ? 'bg-blue-700 text-white border-blue-700 shadow-xs'
+                      : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'
                   }`}
                 >
                   Compact
@@ -134,14 +127,18 @@ export const AppearanceSettingsPage: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-slate-400 mb-1 font-medium">Font Size Scale:</label>
-              <div className="grid grid-cols-3 gap-2 font-mono">
+              <label className="block text-xs sm:text-sm font-bold text-slate-700 uppercase tracking-wider mb-2">
+                Font Size Scale:
+              </label>
+              <div className="grid grid-cols-3 gap-3">
                 {(['small', 'medium', 'large'] as const).map((fs) => (
                   <button
                     key={fs}
                     onClick={() => setFontSize(fs)}
-                    className={`p-2 rounded-xl border text-center uppercase ${
-                      fontSize === fs ? 'bg-sky-950 text-sky-400 border-sky-800 font-bold' : 'bg-slate-950 text-slate-400 border-slate-800'
+                    className={`h-11 rounded-xl border text-center uppercase font-bold text-xs sm:text-sm transition-all cursor-pointer ${
+                      fontSize === fs
+                        ? 'bg-blue-700 text-white border-blue-700 shadow-xs'
+                        : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'
                     }`}
                   >
                     {fs}
@@ -153,23 +150,27 @@ export const AppearanceSettingsPage: React.FC = () => {
         </div>
 
         {/* Map Style */}
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
-          <h3 className="font-bold text-white text-sm">Mapbox Corridor Map Style</h3>
+        <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 space-y-5 shadow-xs">
+          <h3 className="font-extrabold text-slate-900 text-lg">Corridor Map Rendering Style</h3>
 
-          <div className="space-y-3 text-xs font-mono">
+          <div className="space-y-4">
             <div>
-              <label className="block text-slate-400 mb-1 font-medium">Map Tile Layer:</label>
-              <div className="grid grid-cols-3 gap-2">
+              <label className="block text-xs sm:text-sm font-bold text-slate-700 uppercase tracking-wider mb-2">
+                Map Layer:
+              </label>
+              <div className="grid grid-cols-3 gap-3">
                 {[
-                  { id: 'dark', label: 'Dark Vector' },
                   { id: 'standard', label: 'Standard Street' },
                   { id: 'satellite', label: 'Satellite' },
+                  { id: 'dark', label: 'Vector Contrast' },
                 ].map((st) => (
                   <button
                     key={st.id}
                     onClick={() => setMapStyle(st.id)}
-                    className={`p-2.5 rounded-xl border text-center text-[11px] ${
-                      mapStyle === st.id ? 'bg-sky-950 text-sky-400 border-sky-800 font-bold' : 'bg-slate-950 text-slate-400 border-slate-800'
+                    className={`h-11 rounded-xl border text-center font-bold text-xs sm:text-sm transition-all cursor-pointer ${
+                      mapStyle === st.id
+                        ? 'bg-blue-700 text-white border-blue-700 shadow-xs'
+                        : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'
                     }`}
                   >
                     {st.label}
@@ -178,8 +179,8 @@ export const AppearanceSettingsPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 text-[11px] text-slate-400">
-              Active Map Theme: <strong className="text-sky-400">{mapStyle.toUpperCase()}</strong> (Effective System Mode: <strong className="text-emerald-400">{effectiveTheme.toUpperCase()}</strong>)
+            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs sm:text-sm text-slate-600 font-medium">
+              Active Map Theme: <strong className="text-blue-700 font-bold">{mapStyle.toUpperCase()}</strong> (Effective System Mode: <strong className="text-emerald-700 font-bold">{effectiveTheme.toUpperCase()}</strong>)
             </div>
           </div>
         </div>
@@ -188,7 +189,7 @@ export const AppearanceSettingsPage: React.FC = () => {
       <div className="flex justify-end">
         <button
           onClick={handleSave}
-          className="px-6 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-xs shadow-lg shadow-sky-500/20 transition-all"
+          className="h-11 sm:h-12 px-7 rounded-xl bg-blue-700 hover:bg-blue-800 text-white font-extrabold text-sm sm:text-base shadow-sm transition-all cursor-pointer"
         >
           Save & Apply Appearance Preferences
         </button>

@@ -29,9 +29,7 @@ const ThemeContext = createContext<ThemeContextType>({
 });
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [theme, setThemeState] = useState<ThemeMode>(() => {
-    return (localStorage.getItem('retrack_theme') as ThemeMode) || 'light';
-  });
+  const [theme] = useState<ThemeMode>('light');
 
   const [density, setDensityState] = useState<DensityMode>(() => {
     return (localStorage.getItem('retrack_density') as DensityMode) || 'comfortable';
@@ -45,22 +43,14 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return localStorage.getItem('retrack_mapstyle') || 'standard';
   });
 
-  const effectiveTheme: 'light' | 'dark' =
-    theme === 'system'
-      ? window.matchMedia('(prefers-color-scheme: dark)').matches
-        ? 'dark'
-        : 'light'
-      : theme;
+  const effectiveTheme: 'light' | 'dark' = 'light';
 
   useEffect(() => {
     const root = document.documentElement;
-    if (effectiveTheme === 'light') {
-      root.classList.add('light');
-      root.classList.remove('dark');
-    } else {
-      root.classList.add('dark');
-      root.classList.remove('light');
-    }
+    root.classList.add('light');
+    root.classList.remove('dark');
+    localStorage.setItem('retrack_theme', 'light');
+
 
     // Apply Density Classes
     root.classList.remove('density-comfortable', 'density-compact');
@@ -71,9 +61,8 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     root.classList.add(`font-size-${fontSize}`);
   }, [effectiveTheme, density, fontSize]);
 
-  const setTheme = (t: ThemeMode) => {
-    setThemeState(t);
-    localStorage.setItem('retrack_theme', t);
+  const setTheme = (_t: ThemeMode) => {
+    localStorage.setItem('retrack_theme', 'light');
   };
 
   const setDensity = (d: DensityMode) => {

@@ -10,46 +10,64 @@ const mockAuditLogs = [
 
 export const AuditLogsPage: React.FC = () => {
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-xl font-bold text-white flex items-center space-x-2">
-          <ScrollText className="w-5 h-5 text-sky-400" />
-          <span>System Audit Trail & Operational Compliance Logs</span>
-        </h1>
-        <p className="text-xs text-slate-400 mt-1">
-          Immutable audit record of block creations, PN authorizations, controller overrides, and risk predictions.
-        </p>
+    <div className="space-y-8 pb-12">
+      {/* Header Banner */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-xs">
+        <div className="flex items-start gap-4">
+          <div className="w-14 h-14 rounded-2xl bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-700 shrink-0 shadow-xs">
+            <ScrollText className="w-8 h-8" />
+          </div>
+          <div>
+            <div className="flex flex-wrap items-center gap-2 mb-2">
+              <span className="px-3 py-1 rounded-full text-xs font-mono font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                IMMUTABLE COMPLIANCE LEDGER
+              </span>
+              <span className="px-3 py-1 rounded-full text-xs font-mono font-bold bg-blue-50 text-blue-800 border border-blue-200">
+                AUDIT TRAIL ACTIVE
+              </span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-slate-900 tracking-tight">
+              System Audit Trail & Operational Compliance Logs
+            </h1>
+            <p className="text-sm sm:text-base text-slate-600 mt-2 max-w-3xl leading-relaxed">
+              Immutable audit record of block creations, PN authorizations, controller overrides, and risk predictions across railway divisions.
+            </p>
+          </div>
+        </div>
       </div>
 
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-sm">
-        <table className="w-full text-left text-xs text-slate-300">
-          <thead className="bg-slate-950 text-slate-400 font-mono uppercase text-[10px] border-b border-slate-800">
-            <tr>
-              <th className="p-3.5">Log ID</th>
-              <th className="p-3.5">Action Event</th>
-              <th className="p-3.5">User Role</th>
-              <th className="p-3.5">Entity Reference</th>
-              <th className="p-3.5">Timestamp</th>
-              <th className="p-3.5">Details</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-800/60 font-mono">
-            {mockAuditLogs.map((log) => (
-              <tr key={log.id} className="hover:bg-slate-800/40 transition-colors">
-                <td className="p-3.5 text-sky-400 font-bold">{log.id}</td>
-                <td className="p-3.5">
-                  <span className="px-2 py-0.5 rounded bg-sky-950 text-sky-300 border border-sky-800/40 text-[10px]">
-                    {log.action}
-                  </span>
-                </td>
-                <td className="p-3.5 text-slate-200">{log.user}</td>
-                <td className="p-3.5 text-emerald-400">{log.entity}</td>
-                <td className="p-3.5 text-slate-400">{log.timestamp}</td>
-                <td className="p-3.5 text-slate-300 font-sans">{log.details}</td>
+      {/* Audit Table */}
+      <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-xs">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead className="bg-slate-50 text-slate-700 font-bold uppercase text-xs border-b border-slate-200 tracking-wider">
+              <tr>
+                <th className="py-4 px-4 sm:px-5">Log ID</th>
+                <th className="py-4 px-4 sm:px-5">Action Event</th>
+                <th className="py-4 px-4 sm:px-5">User Role</th>
+                <th className="py-4 px-4 sm:px-5">Entity Reference</th>
+                <th className="py-4 px-4 sm:px-5">Timestamp</th>
+                <th className="py-4 px-4 sm:px-5">Details</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-slate-100 text-slate-800 text-sm font-semibold">
+              {mockAuditLogs.map((log) => (
+                <tr key={log.id} className="hover:bg-blue-50/40 transition-colors">
+                  <td className="py-4 px-4 sm:px-5 font-mono font-bold text-blue-700">{log.id}</td>
+                  <td className="py-4 px-4 sm:px-5">
+                    <span className="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-800 border border-blue-200 font-mono text-xs font-bold">
+                      {log.action}
+                    </span>
+                  </td>
+                  <td className="py-4 px-4 sm:px-5 text-slate-900 font-medium">{log.user}</td>
+                  <td className="py-4 px-4 sm:px-5 text-emerald-800 font-mono font-bold">{log.entity}</td>
+                  <td className="py-4 px-4 sm:px-5 text-slate-500 font-mono text-xs sm:text-sm">{log.timestamp}</td>
+                  <td className="py-4 px-4 sm:px-5 text-slate-700 font-medium">{log.details}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

@@ -18,44 +18,36 @@ export const KpiCard: React.FC<KpiCardProps> = ({
   color = 'sky',
   trend,
 }) => {
-  const colorMap = {
-    sky: 'from-sky-500/10 to-sky-600/5 text-sky-400 border-sky-500/30 icon-sky',
-    emerald: 'from-emerald-500/10 to-emerald-600/5 text-emerald-400 border-emerald-500/30 icon-emerald',
-    amber: 'from-amber-500/10 to-amber-600/5 text-amber-400 border-amber-500/30 icon-amber',
-    rose: 'from-rose-500/10 to-rose-600/5 text-rose-400 border-rose-500/30 icon-rose',
-    purple: 'from-purple-500/10 to-purple-600/5 text-purple-400 border-purple-500/30 icon-purple',
-  };
-
-  const iconBgMap = {
-    sky: 'bg-sky-500/20 text-sky-400',
-    emerald: 'bg-emerald-500/20 text-emerald-400',
-    amber: 'bg-amber-500/20 text-amber-400',
-    rose: 'bg-rose-500/20 text-rose-400',
-    purple: 'bg-purple-500/20 text-purple-400',
+  const iconThemeMap = {
+    sky: 'bg-blue-50 text-blue-700 border-blue-200',
+    emerald: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    amber: 'bg-amber-50 text-amber-700 border-amber-200',
+    rose: 'bg-rose-50 text-rose-700 border-rose-200',
+    purple: 'bg-purple-50 text-purple-700 border-purple-200',
   };
 
   return (
-    <div className={`p-4 rounded-xl bg-slate-900 border border-slate-800 bg-gradient-to-br ${colorMap[color]} shadow-sm hover:border-slate-700 transition-all duration-200`}>
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+    <div className="p-5 sm:p-6 rounded-2xl bg-white border border-slate-200 shadow-xs hover:shadow-md hover:border-slate-300 transition-all duration-200 flex flex-col justify-between">
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-sm sm:text-base font-bold text-slate-700 leading-tight">
           {title}
         </span>
-        <div className={`p-2 rounded-lg ${iconBgMap[color]}`}>
-          <Icon className="w-4 h-4" />
+        <div className={`w-12 h-12 rounded-xl flex items-center justify-center border flex-shrink-0 ${iconThemeMap[color]}`}>
+          <Icon className="w-6 h-6" />
         </div>
       </div>
-      <div className="mt-2 flex items-baseline justify-between">
-        <span className="text-2xl font-bold font-mono text-white tracking-tight">
+      <div className="mt-4 flex items-baseline justify-between gap-2">
+        <span className="text-3xl sm:text-4xl font-black font-mono text-slate-900 tracking-tight">
           {value}
         </span>
         {trend && (
-          <span className="text-xs font-mono text-emerald-400 bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-800/40">
+          <span className="text-xs sm:text-sm font-bold font-mono text-emerald-800 bg-emerald-100/70 px-2.5 py-1 rounded-lg border border-emerald-300">
             {trend}
           </span>
         )}
       </div>
       {subtitle && (
-        <p className="mt-1 text-[11px] text-slate-400 truncate">{subtitle}</p>
+        <p className="mt-2 text-sm font-medium text-slate-600 truncate">{subtitle}</p>
       )}
     </div>
   );

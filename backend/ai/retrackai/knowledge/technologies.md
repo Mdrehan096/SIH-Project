@@ -21,7 +21,6 @@
 - **Optimization Solver:** Google OR-Tools v9.9 (CP-SAT Constraint Programming Solver)
 - **Predictive Risk Model:** Scikit-Learn v1.4 (Random Forest Classifier & Feature Importance Evaluator)
 - **Data Science Core:** Pandas v2.2, NumPy v1.26, Joblib v1.3
-
 ## Database & Cloud Persistence
 - **Engine:** Supabase PostgreSQL 15+ (Cloud Relational Database)
 - **Driver:** `supabase-py` v2.4, Direct PostgreSQL Connection Pooler (`psycopg2-binary`, `asyncpg`)

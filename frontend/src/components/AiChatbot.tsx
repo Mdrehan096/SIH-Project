@@ -69,13 +69,11 @@ const EXPLAINER_BUTTONS = [
 ];
 
 const QUICK_PROMPT_CHIPS = [
-  'Explain RETRACK',
-  'How does risk scoring work?',
-  'Explain CP-SAT',
-  'Explain the complete workflow',
-  'What is the future scope?',
-  'Prepare me for viva',
-  'What are TMS, TDMS, SMMS feeds?',
+  'Why was this block selected?',
+  'Show high-risk assets.',
+  'Explain today\'s block plan.',
+  'Which conflicts were detected?',
+  'How does CP-SAT optimize the schedule?',
   'How does +15 min safety buffer work?',
 ];
 
@@ -320,6 +318,12 @@ export const AiChatbot: React.FC = () => {
     }
   };
 
+  useEffect(() => {
+    const handleOpen = () => setIsOpen(true);
+    window.addEventListener('open-retrackai', handleOpen);
+    return () => window.removeEventListener('open-retrackai', handleOpen);
+  }, []);
+
   const filteredConversations = conversations.filter((c) =>
     c.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -330,14 +334,15 @@ export const AiChatbot: React.FC = () => {
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 right-6 bg-gradient-to-r from-sky-500 via-blue-600 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-white font-extrabold py-3.5 px-5 rounded-2xl shadow-2xl flex items-center space-x-3 border border-sky-400/40 z-40 transition-all transform hover:scale-105 active:scale-95 cursor-pointer"
+          className="fixed bottom-5 right-5 bg-[#092b4c] hover:bg-[#0c3660] text-white py-2 px-3.5 rounded-lg shadow-md flex items-center space-x-2.5 border border-[#1b436c] z-40 transition-all cursor-pointer hover:shadow-lg"
+          title="Open RETRACKAI Operations Assistant"
         >
-          <div className="p-1.5 rounded-xl bg-slate-950/60 shadow-inner">
-            <Bot className="w-5 h-5 text-sky-400 animate-pulse" />
+          <div className="p-1 rounded bg-[#061c32] text-amber-300">
+            <Bot className="w-4 h-4" />
           </div>
           <div className="text-left">
-            <span className="text-xs font-bold block leading-none">RETRACKAI Assistant</span>
-            <span className="text-[10px] text-sky-200/80 font-mono block mt-0.5">Project Knowledge & Live AI</span>
+            <span className="text-xs font-bold block leading-tight">RETRACKAI Assistant</span>
+            <span className="text-[10px] text-amber-200/90 font-mono block">Railway Operations Assistant</span>
           </div>
         </button>
       )}

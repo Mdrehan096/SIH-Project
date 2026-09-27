@@ -1,0 +1,37 @@
+services:
+  # Backend API Service
+  - type: web
+    name: retrack-backend
+    env: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: CORS_ORIGINS
+        value: '["*"]'
+      - key: SUPABASE_URL
+        value: https://aevaeyhswuasgjbkgiqq.supabase.co
+      - key: SUPABASE_ANON_KEY
+        value: sb_publishable_nq5c4ydgZ6VRH8aUTkIAVg_An1qU9_4
+      - key: JWT_SECRET
+        generateValue: true
+
+  # Frontend Static Web App
+  - type: static_site
+    name: retrack-frontend
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_BASE_URL
+        fromService:
+          type: web
+          name: retrack-backend
+          property: url
+          format: ${url}/api/v1

@@ -37,61 +37,83 @@ export const DivisionsPage: React.FC = () => {
   }, []);
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-xl font-bold text-white flex items-center space-x-2">
-          <MapPin className="w-5 h-5 text-sky-400" />
-          <span>Railway Division-Wise Operations & Distance Module</span>
-        </h1>
-        <p className="text-xs text-slate-400 mt-1">
-          Division route distance metrics, active maintenance workload, train density, and operational risk indexes.
-        </p>
+    <div className="space-y-8 pb-12">
+      {/* Header Banner */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-xs">
+        <div className="flex items-start gap-4">
+          <div className="w-14 h-14 rounded-2xl bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-700 shrink-0 shadow-xs">
+            <MapPin className="w-8 h-8" />
+          </div>
+          <div>
+            <div className="flex flex-wrap items-center gap-2 mb-2">
+              <span className="px-3 py-1 rounded-full text-xs font-mono font-bold bg-blue-50 text-blue-800 border border-blue-200">
+                DIVISIONAL NETWORK
+              </span>
+              <span className="px-3 py-1 rounded-full text-xs font-mono font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                5 DIVISIONS ACTIVE
+              </span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-slate-900 tracking-tight">
+              Railway Division-Wise Operations & Distance Module
+            </h1>
+            <p className="text-sm sm:text-base text-slate-600 mt-2 max-w-3xl leading-relaxed">
+              Division route distance metrics, active maintenance workload, train density, and operational risk indexes.
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Divisions Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {divisions.map((div) => (
-          <div key={div.id} className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 shadow-sm hover:border-slate-700 transition-all">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+          <div
+            key={div.id}
+            className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 space-y-5 shadow-xs hover:shadow-md hover:border-blue-300 transition-all"
+          >
+            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
               <div>
-                <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-sky-950 text-sky-400 border border-sky-800">
+                <span className="px-3 py-1 rounded-xl text-xs font-mono font-bold bg-blue-50 text-blue-800 border border-blue-200">
                   {div.code}
                 </span>
-                <h3 className="font-bold text-white text-sm mt-1">{div.name}</h3>
-                <p className="text-[11px] text-slate-400">{div.zone}</p>
+                <h3 className="font-extrabold text-slate-900 text-lg sm:text-xl mt-2">{div.name}</h3>
+                <p className="text-xs sm:text-sm text-slate-500 font-medium">{div.zone}</p>
               </div>
-              <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold ${
-                div.workload_index === 'HIGH' ? 'bg-rose-950 text-rose-300 border border-rose-800' : 'bg-emerald-950 text-emerald-300 border border-emerald-800'
-              }`}>
+              <span
+                className={`px-3 py-1 rounded-xl text-xs font-mono font-bold border ${
+                  div.workload_index === 'HIGH'
+                    ? 'bg-rose-50 text-rose-800 border-rose-200'
+                    : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                }`}
+              >
                 {div.workload_index} WORKLOAD
               </span>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 text-xs font-mono">
-              <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800">
-                <span className="text-[10px] text-slate-500 uppercase block">Route Distance</span>
-                <span className="font-bold text-sky-400 text-sm">{div.total_route_km} km</span>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+                <span className="text-xs text-slate-500 uppercase font-bold tracking-wider block">Route Distance</span>
+                <span className="font-mono font-black text-blue-700 text-lg mt-1 block">{div.total_route_km} km</span>
               </div>
 
-              <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800">
-                <span className="text-[10px] text-slate-500 uppercase block">Active Blocks</span>
-                <span className="font-bold text-amber-400 text-sm">{div.active_blocks} Possessions</span>
+              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+                <span className="text-xs text-slate-500 uppercase font-bold tracking-wider block">Active Blocks</span>
+                <span className="font-mono font-black text-amber-700 text-lg mt-1 block">{div.active_blocks} Possessions</span>
               </div>
 
-              <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800">
-                <span className="text-[10px] text-slate-500 uppercase block">Trains Live</span>
-                <span className="font-bold text-emerald-400 text-sm">{div.trains_running} Active</span>
+              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+                <span className="text-xs text-slate-500 uppercase font-bold tracking-wider block">Trains Live</span>
+                <span className="font-mono font-black text-emerald-700 text-lg mt-1 block">{div.trains_running} Active</span>
               </div>
 
-              <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800">
-                <span className="text-[10px] text-slate-500 uppercase block">AI Risk Index</span>
-                <span className="font-bold text-rose-400 text-sm">{div.risk_score} / 100</span>
+              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+                <span className="text-xs text-slate-500 uppercase font-bold tracking-wider block">AI Risk Index</span>
+                <span className="font-mono font-black text-rose-700 text-lg mt-1 block">{div.risk_score} / 100</span>
               </div>
             </div>
 
-            <div className="pt-2 border-t border-slate-800 flex items-center justify-between text-xs font-mono text-slate-400">
-              <span>HQ: <strong className="text-slate-200">{div.headquarters}</strong></span>
-              <span>Avg Delay: <strong className="text-amber-400">{div.avg_delay_min} min</strong></span>
+            <div className="pt-4 border-t border-slate-100 flex items-center justify-between text-xs sm:text-sm font-semibold text-slate-600">
+              <span>HQ: <strong className="text-slate-900">{div.headquarters}</strong></span>
+              <span>Avg Delay: <strong className="text-amber-700">{div.avg_delay_min} min</strong></span>
             </div>
           </div>
         ))}
